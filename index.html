@@ -1,0 +1,2068 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="bg-bg">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Switchboard - AI 编程工具配置切换器</title>
+
+<!-- 引入 Tailwind CSS 进行现代化样式构建 -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        colors: {
+          bg: '#f8fafc',          // slate-50 (画布)
+          surface: '#ffffff',     // white (卡片/侧栏)
+          surface2: '#f1f5f9',    // slate-100 (次级/悬停)
+          border: '#e2e8f0',      // slate-200
+          primary: '#4f46e5',     // indigo-600
+          primaryHover: '#4338ca',// indigo-700
+          danger: '#dc2626',      // red-600
+          success: '#059669',     // emerald-600
+        },
+        fontFamily: {
+          sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+          mono: ['JetBrains Mono', 'SF Mono', 'Consolas', 'monospace'],
+        },
+        animation: {
+          'fade-in': 'fadeIn 0.3s ease-out',
+          'toast-in': 'toastIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+          'slide-up': 'slideUp 0.4s ease-out forwards',
+        },
+        keyframes: {
+          fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+          toastIn: { '0%': { opacity: '0', transform: 'translateY(-20px) scale(0.95)' }, '100%': { opacity: '1', transform: 'translateY(0) scale(1)' } },
+          slideUp: { '0%': { opacity: '0', transform: 'translateY(10px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
+        }
+      }
+    }
+  }
+</script>
+
+<style>
+  /* 全局滚动条美化 */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+  body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; overflow: hidden; }
+
+  /* 浅色卡片面板 */
+  .glass { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid #e2e8f0; }
+  
+  /* 原生 details/summary 美化 */
+  details > summary { list-style: none; }
+  details > summary::-webkit-details-marker { display: none; }
+  .file-panel summary::before { content: '▶'; font-size: 10px; display: inline-block; transition: transform 0.2s; margin-right: 6px; color: #94a3b8; }
+  .file-panel[open] summary::before { transform: rotate(90deg); color: #4f46e5; }
+
+  /* 现代拨动开关 */
+  .toggle-switch { position: relative; width: 40px; height: 22px; display: inline-block; }
+  .toggle-switch input { opacity: 0; width: 0; height: 0; }
+  .toggle-switch .slider { position: absolute; inset: 0; background: #cbd5e1; border-radius: 99px; cursor: pointer; transition: 0.3s cubic-bezier(0.4, 0.0, 0.2, 1); }
+  .toggle-switch .slider::before { content: ''; position: absolute; height: 16px; width: 16px; left: 3px; bottom: 3px; background: #fff; border-radius: 50%; transition: 0.3s cubic-bezier(0.4, 0.0, 0.2, 1); box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+  .toggle-switch input:checked + .slider { background: #4f46e5; }
+  .toggle-switch input:checked + .slider::before { transform: translateX(18px); }
+
+	  /* 卡片开合指示器 */
+	  .toggle-indicator { transition: transform 0.3s ease; }
+	  .toggle-indicator.open { transform: rotate(90deg); }
+	  .card-body { transition: all 0.3s ease; max-height: 1000px; opacity: 1; overflow: hidden; }
+	  .card.collapsed .card-body { max-height: 0; opacity: 0; padding-top: 0; padding-bottom: 0; margin-top: 0; border-top-color: transparent; }
+	  .binding-body { transition: max-height 0.28s ease, opacity 0.2s ease, padding-top 0.28s ease, padding-bottom 0.28s ease; max-height: 720px; opacity: 1; overflow: hidden; }
+	  .binding-section.collapsed .binding-body { max-height: 0; opacity: 0; padding-top: 0; padding-bottom: 0; }
+	  .binding-toggle-icon { transition: transform 0.2s ease; }
+	  .binding-section:not(.collapsed) .binding-toggle-icon { transform: rotate(90deg); }
+	  /* 折叠后让顶栏成为一条干净的圆角汇总条 */
+	  .binding-header { transition: padding 0.28s ease, border-color 0.28s ease, background-color 0.28s ease; }
+	  .binding-section.collapsed .binding-header { border-bottom-color: transparent; background-color: transparent; }
+	  .binding-hint { transition: max-height 0.28s ease, opacity 0.18s ease, margin-top 0.28s ease; max-height: 40px; opacity: 1; overflow: hidden; }
+	  .binding-section.collapsed .binding-hint { max-height: 0; opacity: 0; margin-top: 0; }
+	  .binding-section.embedded { transition: max-height 0.28s ease, opacity 0.2s ease, margin 0.28s ease, border-color 0.28s ease; max-height: 900px; }
+	  .binding-section.embedded.collapsed { max-height: 0; opacity: 0; margin-top: 0 !important; margin-bottom: 0 !important; border-width: 0 !important; border-color: transparent; pointer-events: none; }
+
+  /* 模态框及遮罩 */
+  .modal-overlay { opacity: 0; pointer-events: none; transition: opacity 0.3s ease; backdrop-filter: blur(4px); background: rgba(15,23,42,0.45); }
+  .modal-overlay.show { opacity: 1; pointer-events: auto; }
+  .modal-box { transform: scale(0.95) translateY(10px); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); opacity: 0; }
+  .modal-overlay.show .modal-box { transform: scale(1) translateY(0); opacity: 1; }
+
+  /* 进度日志高亮 */
+  .log-ok { color: #059669; }
+  .log-warn { color: #d97706; }
+  .log-err { color: #dc2626; }
+  .log-info { color: #4f46e5; }
+
+  /* 输入框聚焦环 */
+  .input-glow:focus-within { box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15); border-color: #4f46e5; }
+
+  @media (max-width: 900px) {
+    body { height: auto !important; min-height: 100vh; overflow: auto !important; }
+    .app-shell { flex-direction: column; height: auto !important; min-height: 100vh; }
+    .app-sidebar { width: 100% !important; height: auto !important; min-height: 0 !important; border-right: 0; border-bottom: 1px solid #e2e8f0; }
+    .app-main { overflow: visible !important; min-height: auto !important; }
+    #profileList { flex: none; max-height: 280px; overflow-y: auto; }
+    .action-dock { left: 0 !important; padding: 16px; }
+  }
+</style>
+</head>
+<body class="bg-bg text-slate-700 h-screen flex selection:bg-primary/20 selection:text-primary antialiased">
+
+<div class="app-shell flex w-full h-full relative z-0">
+  
+  <!-- 左侧边栏 -->
+  <aside class="app-sidebar w-80 bg-surface border-r border-border flex flex-col h-full shrink-0 relative shadow-sm">
+    <!-- Logo 区域 -->
+    <div class="p-6 border-b border-border flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-sm">
+        <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+      </div>
+      <div>
+        <h1 class="text-lg font-bold text-slate-900 tracking-tight">Agent Switchboard</h1>
+        <p class="text-[11px] text-slate-500 font-medium">本地配置档案切换</p>
+      </div>
+    </div>
+
+    <!-- 配置列表操作 -->
+    <div class="p-4 border-b border-border space-y-3">
+      <div class="grid grid-cols-3 gap-2" id="toolTabs"></div>
+      <button class="w-full bg-primary hover:bg-primaryHover text-white py-2.5 rounded-lg text-sm font-medium transition-all shadow-sm hover:shadow flex items-center justify-center gap-2" onclick="App.showAddProfile()">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        <span id="addProfileBtnLabel">新建配置</span>
+      </button>
+      <p class="text-[11px] text-slate-500 leading-relaxed px-1">文件绑定已移到右侧主区域。当前工具完成绑定后，才能创建、编辑和应用配置。</p>
+    </div>
+
+    <!-- 配置列表 -->
+    <div class="flex-1 overflow-y-auto p-3" id="profileList"></div>
+
+    <!-- 底部操作 -->
+    <div class="p-4 border-t border-border flex gap-3 bg-surface2/50">
+      <button class="flex-1 py-2 px-3 bg-surface hover:bg-surface2 border border-border rounded-lg text-xs font-medium text-slate-600 transition-colors flex items-center justify-center gap-2 group" onclick="App.exportProfiles()">
+        <svg class="w-4 h-4 text-slate-400 group-hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+        导出
+      </button>
+      <button class="flex-1 py-2 px-3 bg-surface hover:bg-surface2 border border-border rounded-lg text-xs font-medium text-slate-600 transition-colors flex items-center justify-center gap-2 group" onclick="App.importProfilesFromFile()">
+        <svg class="w-4 h-4 text-slate-400 group-hover:text-success transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+        导入
+      </button>
+    </div>
+  </aside>
+
+  <!-- 主内容区 -->
+  <main class="app-main flex-1 overflow-y-auto relative" id="mainContent"></main>
+</div>
+
+<!-- Toast 通知容器 -->
+<div class="fixed top-6 right-6 z-[2000] flex flex-col gap-3 pointer-events-none" id="toastContainer"></div>
+
+<!-- 模态框 -->
+<div class="fixed inset-0 modal-overlay flex items-center justify-center z-[1000]" id="modalOverlay" onclick="if(event.target===this)Modal.close()">
+  <div class="modal-box bg-surface border border-border rounded-2xl w-[90%] max-w-[560px] max-h-[85vh] flex flex-col shadow-xl relative overflow-hidden">
+    <!-- 模态框顶部强调边缘 -->
+    <div class="absolute top-0 left-0 right-0 h-1 bg-primary"></div>
+    
+    <div class="px-6 py-5 border-b border-border flex items-center justify-between">
+      <h3 class="text-lg font-bold text-slate-900" id="modalTitle"></h3>
+      <button class="text-slate-400 hover:text-slate-900 transition-colors p-1 rounded-md hover:bg-slate-100" onclick="Modal.close()">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="p-6 overflow-y-auto flex-1 space-y-4" id="modalBody"></div>
+    <div class="px-6 py-4 border-t border-border bg-surface2 flex justify-end gap-3" id="modalFooter"></div>
+  </div>
+</div>
+
+<!-- 隐藏的输入框 -->
+<input type="file" id="jsonImportInput" class="hidden" accept=".json">
+
+<script>
+// ============================================================
+// Config file definitions (原封不动保留核心逻辑)
+// ============================================================
+const FILE_DEFS = {
+  claude:      { label: 'Claude Code',        file: 'settings.json', path: '~/.claude/settings.json',           accept: { 'application/json': ['.json'] } },
+  codexConfig: { label: 'Codex (config)',      file: 'config.toml',   path: '~/.codex/config.toml',             accept: { 'text/plain': ['.toml'] } },
+  codexAuth:   { label: 'Codex (auth)',        file: 'auth.json',     path: '~/.codex/auth.json',               accept: { 'application/json': ['.json'] } },
+  opencode:    { label: 'OpenCode',            file: 'opencode.json', path: '~/.config/opencode/opencode.json', accept: { 'application/json': ['.json'] } },
+};
+
+// ============================================================
+// IndexedDB - persist file handles
+// ============================================================
+const HandleDB = {
+  _db: null,
+  async open() {
+    if (this._db) return this._db;
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open('aiswitch_fh', 1);
+      req.onupgradeneeded = () => req.result.createObjectStore('handles');
+      req.onsuccess = () => { this._db = req.result; resolve(this._db); };
+      req.onerror = () => reject(req.error);
+    });
+  },
+  async save(key, handle) {
+    const db = await this.open();
+    return new Promise((res, rej) => { const tx = db.transaction('handles','readwrite'); tx.objectStore('handles').put(handle, key); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); });
+  },
+  async load(key) {
+    const db = await this.open();
+    return new Promise(res => { const tx = db.transaction('handles','readonly'); const r = tx.objectStore('handles').get(key); r.onsuccess=()=>res(r.result||null); r.onerror=()=>res(null); });
+  },
+  async remove(key) {
+    const db = await this.open();
+    return new Promise(res => { const tx = db.transaction('handles','readwrite'); tx.objectStore('handles').delete(key); tx.oncomplete=()=>res(); tx.onerror=()=>res(); });
+  },
+};
+
+// ============================================================
+// FS - per-file handle operations
+// ============================================================
+const FS = {
+  handles: {},
+  async init() {
+    for (const key of Object.keys(FILE_DEFS)) {
+      const h = await HandleDB.load(key);
+      if (h) {
+        try {
+          const perm = await h.queryPermission({ mode: 'readwrite' });
+          if (perm === 'granted') { this.handles[key] = h; continue; }
+        } catch {}
+      }
+    }
+  },
+  isLinked(key) { return !!this.handles[key]; },
+  linkedCount() { return Object.keys(this.handles).length; },
+  async link(key) {
+    const def = FILE_DEFS[key];
+    const [handle] = await window.showOpenFilePicker({
+      types: [{ description: def.label, accept: def.accept }],
+      multiple: false,
+    });
+    const perm = await handle.queryPermission({ mode: 'readwrite' });
+    if (perm !== 'granted') {
+      const p2 = await handle.requestPermission({ mode: 'readwrite' });
+      if (p2 !== 'granted') throw new Error('未获得写入权限');
+    }
+    this.handles[key] = handle;
+    await HandleDB.save(key, handle);
+    return handle;
+  },
+  async unlink(key) {
+    delete this.handles[key];
+    await HandleDB.remove(key);
+  },
+  async ensurePermission(key) {
+    const h = this.handles[key];
+    if (!h) return false;
+    let perm = await h.queryPermission({ mode: 'readwrite' });
+    if (perm === 'granted') return true;
+    perm = await h.requestPermission({ mode: 'readwrite' });
+    return perm === 'granted';
+  },
+  async read(key) {
+    const h = this.handles[key];
+    if (!h) return null;
+    if (!(await this.ensurePermission(key))) return null;
+    const file = await h.getFile();
+    return await file.text();
+  },
+  async write(key, content) {
+    const h = this.handles[key];
+    if (!h) throw new Error(FILE_DEFS[key].label + ' 文件未关联');
+    if (!(await this.ensurePermission(key))) throw new Error('无写入权限');
+    const writable = await h.createWritable();
+    await writable.write(content);
+    await writable.close();
+  },
+};
+
+// ============================================================
+// Store & Backups
+// ============================================================
+const TOOL_ORDER = ['claude', 'codex', 'opencode'];
+const TOOL_META = {
+  claude: {
+    short: 'CC',
+    name: 'Claude Code',
+    colorCode: '#d97706',
+    badgeClass: 'text-amber-600',
+    fileKeys: ['claude'],
+    requiredFileKeys: ['claude'],
+    intro: '独立维护 Claude Code 的 API、模型与静默模式。',
+  },
+  codex: {
+    short: 'CX',
+    name: 'Codex CLI',
+    colorCode: '#10b981',
+    badgeClass: 'text-emerald-600',
+    fileKeys: ['codexConfig', 'codexAuth'],
+    requiredFileKeys: ['codexConfig', 'codexAuth'],
+    intro: '独立维护 Codex CLI 的模型路由、认证模式与登录缓存。',
+  },
+  opencode: {
+    short: 'OC',
+    name: 'OpenCode',
+    colorCode: '#8b5cf6',
+    badgeClass: 'text-violet-600',
+    fileKeys: ['opencode'],
+    requiredFileKeys: ['opencode'],
+    intro: '独立维护 OpenCode 的模型与 Provider JSON。',
+  },
+};
+
+const CLAUDE_TEXT_FIELDS = [
+  'apiKey',
+  'baseUrl',
+  'model',
+  'opusModel',
+  'sonnetModel',
+  'haikuModel',
+  'anthropicBetas',
+  'autoUpdatesChannel',
+];
+
+const CLAUDE_BOOL_FIELDS = [
+  'experimentalAgentTeams',
+  'alwaysThinkingEnabled',
+  'skipDangerousModePermissionPrompt',
+];
+
+function deepCopy(v) { return v == null ? v : JSON.parse(JSON.stringify(v)); }
+function hasOwn(obj, key) { return Object.prototype.hasOwnProperty.call(obj || {}, key); }
+function normalizeCodexAuthMode(value) {
+  const raw = String(value || '').trim();
+  const lower = raw.toLowerCase();
+  if (lower === 'chatgpt') return 'chatgpt';
+  return 'api';
+}
+// Claude 的布尔项使用 null 表示“未配置”，避免新档案误写入 false。
+function isConfiguredBool(v) { return v === true || v === false; }
+function claudeFieldCount(profile = {}) {
+  return CLAUDE_TEXT_FIELDS.filter(key => profile[key]).length
+    + CLAUDE_BOOL_FIELDS.filter(key => isConfiguredBool(profile[key])).length;
+}
+
+function emptyProfile(tool, desc = '') {
+  const base = { description: desc };
+  if (tool === 'claude') {
+    return {
+      ...base,
+      apiKey: '',
+      baseUrl: '',
+      model: '',
+      opusModel: '',
+      sonnetModel: '',
+      haikuModel: '',
+      anthropicBetas: '',
+      experimentalAgentTeams: null,
+      alwaysThinkingEnabled: null,
+      autoUpdatesChannel: '',
+      skipDangerousModePermissionPrompt: null,
+      disableTelemetry: true,
+    };
+  }
+  if (tool === 'codex') {
+    return {
+      ...base,
+      apiKey: '',
+      model: '',
+      modelProvider: '',
+      providerName: '',
+      baseUrl: '',
+      wireApi: 'responses',
+      authMode: 'api',
+      authJson: '',
+    };
+  }
+  return { ...base, model: '', provider: {} };
+}
+
+function normalizeProfile(tool, profile = {}, opts = {}) {
+  const next = { ...emptyProfile(tool, opts.description || profile.description || ''), ...profile };
+  next.description = typeof next.description === 'string' ? next.description : '';
+  if (tool === 'codex') {
+    if (!next.wireApi && profile.wire_api) next.wireApi = profile.wire_api;
+    if (!['responses', 'chat'].includes(next.wireApi)) next.wireApi = 'responses';
+    next.authJson = typeof next.authJson === 'string' ? next.authJson : '';
+    const explicitAuthMode = profile.authMode || profile.auth_mode || '';
+    if (!explicitAuthMode && next.authJson) {
+      try {
+        const parsedAuth = parseCodexAuthJson(next.authJson);
+        next.authMode = parsedAuth.authMode;
+        if (!next.apiKey && parsedAuth.apiKey) next.apiKey = parsedAuth.apiKey;
+      } catch {
+        next.authMode = 'api';
+      }
+    }
+    next.authMode = normalizeCodexAuthMode(explicitAuthMode || next.authMode);
+  }
+  if (tool === 'opencode') {
+    next.provider = profile && profile.provider && typeof profile.provider === 'object' && !Array.isArray(profile.provider)
+      ? deepCopy(profile.provider)
+      : {};
+  }
+  delete next.enabled;
+  delete next.claude;
+  delete next.codex;
+  delete next.opencode;
+  delete next.auth_mode;
+  delete next.forced_login_method;
+  delete next.wire_api;
+  delete next.playwrightPlugin;
+  delete next.rustAnalyzerPlugin;
+  return next;
+}
+
+function profileFieldCount(tool, profile = {}) {
+  if (tool === 'claude') return claudeFieldCount(profile);
+  if (tool === 'codex') {
+    const modeCount = normalizeCodexAuthMode(profile.authMode) === 'chatgpt' ? 1 : 0;
+    return ['apiKey', 'model', 'modelProvider', 'providerName', 'baseUrl', 'authJson'].filter(key => profile[key]).length
+      + modeCount
+      + (profile.wireApi && profile.wireApi !== 'responses' ? 1 : 0);
+  }
+  return (profile.model ? 1 : 0) + (Object.keys(profile.provider || {}).length ? 1 : 0);
+}
+
+function hasMeaningfulConfig(tool, profile) {
+  return profileFieldCount(tool, profile) > 0;
+}
+
+function toolFileKeys(tool) {
+  return TOOL_META[tool].fileKeys;
+}
+
+function toolRequiredFileKeys(tool) {
+  return TOOL_META[tool].requiredFileKeys || TOOL_META[tool].fileKeys;
+}
+
+function toolLinkStatus(tool) {
+  const keys = toolFileKeys(tool);
+  const requiredKeys = toolRequiredFileKeys(tool);
+  const linked = keys.filter(key => FS.isLinked(key));
+  const missing = keys.filter(key => !FS.isLinked(key));
+  const requiredMissing = requiredKeys.filter(key => !FS.isLinked(key));
+  return {
+    keys,
+    requiredKeys,
+    linked,
+    missing,
+    requiredMissing,
+    optionalMissing: missing.filter(key => !requiredKeys.includes(key)),
+    summary: keys.map(key => {
+      const optional = !requiredKeys.includes(key);
+      return `${FILE_DEFS[key].file}${FS.isLinked(key) ? ' 已关联' : optional ? ' 未关联(可选)' : ' 未关联'}`;
+    }).join(' · '),
+  };
+}
+
+function toolManagementReady(tool) {
+  return toolLinkStatus(tool).requiredMissing.length === 0;
+}
+
+function uniqueName(existing, baseName) {
+  let candidate = baseName;
+  let index = 0;
+  while (existing[candidate]) {
+    index += 1;
+    candidate = index === 1 ? `${baseName}-导入` : `${baseName}-导入${index}`;
+  }
+  return candidate;
+}
+
+function toolDefaultImportName(tool) {
+  return `${tool}-current`;
+}
+
+const Store = {
+  // 存储键保持旧名，避免项目改名后丢失用户已有的本地档案。
+  KEY: 'aiswitch_data',
+  _createToolBucket() { return { activeProfile: '', selectedProfile: '', profiles: {} }; },
+  _default() {
+    return {
+      version: 2,
+      selectedTool: 'claude',
+      tools: TOOL_ORDER.reduce((acc, tool) => {
+        acc[tool] = this._createToolBucket();
+        return acc;
+      }, {}),
+    };
+  },
+  _normalizeToolBucket(tool, bucket) {
+    const next = this._createToolBucket();
+    const rawProfiles = bucket && typeof bucket.profiles === 'object' ? bucket.profiles : {};
+    for (const [name, profile] of Object.entries(rawProfiles)) {
+      next.profiles[name] = normalizeProfile(tool, profile);
+      if (profile?.createdAt) next.profiles[name].createdAt = profile.createdAt;
+      if (profile?.updatedAt) next.profiles[name].updatedAt = profile.updatedAt;
+    }
+    if (next.profiles[bucket?.activeProfile]) next.activeProfile = bucket.activeProfile;
+    if (next.profiles[bucket?.selectedProfile]) next.selectedProfile = bucket.selectedProfile;
+    if (!next.selectedProfile) next.selectedProfile = next.activeProfile || Object.keys(next.profiles)[0] || '';
+    return next;
+  },
+  // 兼容旧版“一个档案包含三工具”的结构，自动拆成独立档案。
+  _migrateLegacy(data) {
+    const next = this._default();
+    const legacyProfiles = data && typeof data.profiles === 'object' ? data.profiles : {};
+    for (const [name, profile] of Object.entries(legacyProfiles)) {
+      for (const tool of TOOL_ORDER) {
+        const legacyTool = profile && typeof profile[tool] === 'object' ? profile[tool] : null;
+        if (!legacyTool) continue;
+        const migrated = normalizeProfile(tool, legacyTool, { description: profile.description || '' });
+        if (!hasMeaningfulConfig(tool, migrated)) continue;
+        if (profile.createdAt) migrated.createdAt = profile.createdAt;
+        if (profile.updatedAt) migrated.updatedAt = profile.updatedAt;
+        next.tools[tool].profiles[name] = migrated;
+      }
+    }
+    for (const tool of TOOL_ORDER) {
+      if (data.activeProfile && next.tools[tool].profiles[data.activeProfile]) next.tools[tool].activeProfile = data.activeProfile;
+      if (data.selectedProfile && next.tools[tool].profiles[data.selectedProfile]) next.tools[tool].selectedProfile = data.selectedProfile;
+      if (!next.tools[tool].selectedProfile) next.tools[tool].selectedProfile = next.tools[tool].activeProfile || Object.keys(next.tools[tool].profiles)[0] || '';
+    }
+    next.selectedTool = TOOL_ORDER.find(tool => Object.keys(next.tools[tool].profiles).length) || 'claude';
+    return next;
+  },
+  _normalizeData(data) {
+    if (!data || typeof data !== 'object') return this._default();
+    if (!data.tools) return this._migrateLegacy(data);
+    const next = this._default();
+    next.selectedTool = TOOL_ORDER.includes(data.selectedTool) ? data.selectedTool : 'claude';
+    for (const tool of TOOL_ORDER) next.tools[tool] = this._normalizeToolBucket(tool, data.tools[tool]);
+    return next;
+  },
+  load() {
+    try {
+      const raw = localStorage.getItem(this.KEY);
+      if (!raw) return this._default();
+      const normalized = this._normalizeData(JSON.parse(raw));
+      const serialized = JSON.stringify(normalized);
+      if (serialized !== raw) localStorage.setItem(this.KEY, serialized);
+      return normalized;
+    } catch {
+      return this._default();
+    }
+  },
+  save(data) { localStorage.setItem(this.KEY, JSON.stringify(data)); },
+  getSelectedTool() { return this.load().selectedTool || 'claude'; },
+  setSelectedTool(tool) {
+    if (!TOOL_ORDER.includes(tool)) return;
+    const data = this.load();
+    data.selectedTool = tool;
+    if (!data.tools[tool].selectedProfile) data.tools[tool].selectedProfile = Object.keys(data.tools[tool].profiles)[0] || '';
+    this.save(data);
+  },
+  getProfiles(tool) { return this.load().tools[tool]?.profiles || {}; },
+  getProfile(tool, name) { return this.load().tools[tool]?.profiles?.[name] || null; },
+  saveProfile(tool, name, profile) {
+    const data = this.load();
+    const bucket = data.tools[tool];
+    const normalized = normalizeProfile(tool, profile);
+    normalized.updatedAt = new Date().toISOString();
+    normalized.createdAt = bucket.profiles[name]?.createdAt || profile.createdAt || normalized.updatedAt;
+    bucket.profiles[name] = normalized;
+    if (!bucket.selectedProfile) bucket.selectedProfile = name;
+    this.save(data);
+  },
+  deleteProfile(tool, name) {
+    const data = this.load();
+    const bucket = data.tools[tool];
+    if (!bucket.profiles[name]) return;
+    delete bucket.profiles[name];
+    if (bucket.activeProfile === name) bucket.activeProfile = '';
+    if (bucket.selectedProfile === name) bucket.selectedProfile = Object.keys(bucket.profiles)[0] || '';
+    this.save(data);
+  },
+  renameProfile(tool, oldName, newName) {
+    const data = this.load();
+    const bucket = data.tools[tool];
+    if (!bucket.profiles[oldName] || bucket.profiles[newName]) return;
+    bucket.profiles[newName] = bucket.profiles[oldName];
+    delete bucket.profiles[oldName];
+    if (bucket.activeProfile === oldName) bucket.activeProfile = newName;
+    if (bucket.selectedProfile === oldName) bucket.selectedProfile = newName;
+    this.save(data);
+  },
+  getActive(tool) { return this.load().tools[tool]?.activeProfile || ''; },
+  setActive(tool, name) {
+    const data = this.load();
+    data.tools[tool].activeProfile = name;
+    this.save(data);
+  },
+  getSelected(tool) { return this.load().tools[tool]?.selectedProfile || ''; },
+  setSelected(tool, name) {
+    const data = this.load();
+    data.tools[tool].selectedProfile = name;
+    this.save(data);
+  },
+  mergeImportData(imported) {
+    const incoming = this._normalizeData(imported);
+    const current = this.load();
+    let count = 0;
+    for (const tool of TOOL_ORDER) {
+      const bucket = current.tools[tool];
+      for (const [name, profile] of Object.entries(incoming.tools[tool].profiles)) {
+        const finalName = uniqueName(bucket.profiles, name);
+        bucket.profiles[finalName] = normalizeProfile(tool, profile);
+        if (profile.createdAt) bucket.profiles[finalName].createdAt = profile.createdAt;
+        if (profile.updatedAt) bucket.profiles[finalName].updatedAt = profile.updatedAt;
+        if (!bucket.selectedProfile) bucket.selectedProfile = finalName;
+        count += 1;
+      }
+    }
+    if (!current.selectedTool || !Object.keys(current.tools[current.selectedTool].profiles).length) current.selectedTool = incoming.selectedTool || 'claude';
+    this.save(current);
+    return count;
+  },
+};
+
+const Backups = {
+  // 存储键保持旧名，避免项目改名后丢失用户已有的本地快照。
+  KEY: 'aiswitch_backups',
+  async createBackup() {
+    const backup = { timestamp: new Date().toISOString(), files: {} };
+    for (const key of Object.keys(FILE_DEFS)) {
+      try {
+        const content = await FS.read(key);
+        if (content) backup.files[key] = content;
+      } catch {}
+    }
+    const list = JSON.parse(localStorage.getItem(this.KEY) || '[]');
+    list.push(backup);
+    while (list.length > 10) list.shift();
+    localStorage.setItem(this.KEY, JSON.stringify(list));
+    return backup;
+  },
+  getList() { return JSON.parse(localStorage.getItem(this.KEY) || '[]'); },
+};
+
+// ============================================================
+// Parsers & Appliers
+// ============================================================
+function getTomlRootSection(text) {
+  const lines = String(text || '').split(/\r?\n/);
+  const root = [];
+  for (const line of lines) {
+    if (parseTomlTableHeader(line)) break;
+    root.push(line);
+  }
+  return root.join('\n');
+}
+
+function decodeTomlBasicString(value) {
+  try {
+    return JSON.parse(`"${value}"`);
+  } catch {
+    return value.replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+  }
+}
+
+function readTomlValue(section, key) {
+  const re = new RegExp(`^\\s*${escRx(key)}\\s*=\\s*(?:"((?:\\\\.|[^"\\\\])*)"|'([^']*)'|([^#\\r\\n]*))`, 'm');
+  const match = String(section || '').match(re);
+  if (!match) return '';
+  if (match[1] != null) return decodeTomlBasicString(match[1]);
+  if (match[2] != null) return match[2];
+  return (match[3] || '').trim();
+}
+
+function readTomlRootValue(text, key) {
+  return readTomlValue(getTomlRootSection(text), key);
+}
+
+function findTomlTableBody(text, tableName) {
+  const lines = String(text || '').split(/\r?\n/);
+  const body = [];
+  let collecting = false;
+  for (const line of lines) {
+    const header = parseTomlTableHeader(line);
+    if (header) {
+      if (collecting) break;
+      collecting = header === tableName;
+      continue;
+    }
+    if (collecting) body.push(line);
+  }
+  return collecting || body.length ? body.join('\n') : '';
+}
+
+function parseJsonObject(content) {
+  const parsed = JSON.parse(content || '{}');
+  return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+}
+
+function parseCodexAuthJson(content) {
+  const data = parseJsonObject(content);
+  const tokens = data && typeof data.tokens === 'object' && data.tokens ? data.tokens : {};
+  const authMode = normalizeCodexAuthMode(data.auth_mode || '');
+  const requiredTokenKeys = ['id_token', 'access_token', 'refresh_token', 'account_id'];
+  const missingTokenKeys = requiredTokenKeys.filter(key => !tokens[key]);
+  if (!data.last_refresh) missingTokenKeys.push('last_refresh');
+  return {
+    authMode,
+    apiKey: data.OPENAI_API_KEY || data.openai_api_key || '',
+    authJson: JSON.stringify(data, null, 2) + '\n',
+    hasTokens: !!(tokens.access_token || tokens.refresh_token || tokens.id_token),
+    hasCompleteChatGptAuth: missingTokenKeys.length === 0,
+    missingTokenKeys,
+    accountId: tokens.account_id || '',
+    lastRefresh: data.last_refresh || '',
+  };
+}
+
+function validateCodexChatGptAuth(authJson) {
+  if (!authJson) {
+    return { ok: false, missing: ['auth.json'] };
+  }
+  try {
+    const parsed = parseCodexAuthJson(authJson);
+    return {
+      ok: parsed.hasCompleteChatGptAuth,
+      missing: parsed.missingTokenKeys,
+      parsed,
+    };
+  } catch {
+    return { ok: false, missing: ['valid_json'] };
+  }
+}
+
+const Parsers = {
+  claude(c) {
+    const o = JSON.parse(c);
+    const env = o.env || {};
+    return {
+      apiKey: env.ANTHROPIC_API_KEY || env.ANTHROPIC_AUTH_TOKEN || '',
+      baseUrl: env.ANTHROPIC_BASE_URL || '',
+      model: o.model || '',
+      opusModel: env.ANTHROPIC_DEFAULT_OPUS_MODEL || '',
+      sonnetModel: env.ANTHROPIC_DEFAULT_SONNET_MODEL || '',
+      haikuModel: env.ANTHROPIC_DEFAULT_HAIKU_MODEL || '',
+      anthropicBetas: env.ANTHROPIC_BETAS || '',
+      experimentalAgentTeams: hasOwn(env, 'CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS')
+        ? env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS === '1'
+        : null,
+      alwaysThinkingEnabled: hasOwn(o, 'alwaysThinkingEnabled') ? !!o.alwaysThinkingEnabled : null,
+      autoUpdatesChannel: o.autoUpdatesChannel || '',
+      skipDangerousModePermissionPrompt: hasOwn(o, 'skipDangerousModePermissionPrompt')
+        ? !!o.skipDangerousModePermissionPrompt
+        : null,
+      disableTelemetry: env.DISABLE_TELEMETRY === '1',
+    };
+  },
+  codexConfig(c) {
+    const pk = readTomlRootValue(c, 'model_provider');
+    let pn = '';
+    let bu = '';
+    let wa = '';
+    if (pk) {
+      const body = findTomlTableBody(c, `model_providers.${pk}`);
+      if (body) {
+        pn = readTomlValue(body, 'name');
+        bu = readTomlValue(body, 'base_url');
+        wa = readTomlValue(body, 'wire_api') || 'responses';
+      }
+    }
+    return {
+      model: readTomlRootValue(c, 'model'),
+      modelProvider: pk,
+      providerName: pn,
+      baseUrl: bu,
+      wireApi: wa || 'responses',
+      apiKey: '',
+    };
+  },
+  codexAuth(c) {
+    return parseCodexAuthJson(c);
+  },
+  opencode(c) {
+    const o = JSON.parse(c);
+    return { model: o.model || '', provider: o.provider || {} };
+  },
+};
+
+const CODEX_MANAGED_START = '# --- AISWITCH CODEX START ---';
+const CODEX_MANAGED_END = '# --- AISWITCH CODEX END ---';
+
+function parseTomlTableHeader(line) {
+  const match = line.match(/^\s*\[([^\]]+)\]\s*(?:#.*)?$/);
+  return match ? match[1].trim() : '';
+}
+
+function stripManagedTomlBlock(text, startMarker, endMarker) {
+  const lines = text.split(/\r?\n/);
+  const next = [];
+  let skipping = false;
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!skipping && trimmed === startMarker) {
+      skipping = true;
+      continue;
+    }
+    if (skipping && trimmed === endMarker) {
+      skipping = false;
+      continue;
+    }
+    if (!skipping) next.push(line);
+  }
+  return next.join('\n');
+}
+
+function stripTopLevelTomlKeys(text, keys) {
+  const lines = text.split(/\r?\n/);
+  const next = [];
+  let inRoot = true;
+  for (const line of lines) {
+    const header = parseTomlTableHeader(line);
+    if (header) {
+      inRoot = false;
+      next.push(line);
+      continue;
+    }
+    if (inRoot) {
+      const key = (line.match(/^\s*([A-Za-z0-9_.-]+)\s*=/) || [])[1];
+      if (key && keys.includes(key)) continue;
+    }
+    next.push(line);
+  }
+  return next.join('\n');
+}
+
+function stripTomlTableTree(text, prefix) {
+  const lines = text.split(/\r?\n/);
+  const next = [];
+  let skipping = false;
+  for (const line of lines) {
+    const header = parseTomlTableHeader(line);
+    if (header) {
+      if (header === prefix || header.startsWith(prefix + '.')) {
+        skipping = true;
+        continue;
+      }
+      skipping = false;
+    }
+    if (!skipping) next.push(line);
+  }
+  return next.join('\n');
+}
+
+function cleanupTomlSpacing(text) {
+  return text.replace(/\n{3,}/g, '\n\n').trim();
+}
+
+function splitTomlRootAndTables(text) {
+  const lines = String(text || '').split(/\r?\n/);
+  const root = [];
+  const tables = [];
+  let inTables = false;
+  for (const line of lines) {
+    if (!inTables && parseTomlTableHeader(line)) inTables = true;
+    (inTables ? tables : root).push(line);
+  }
+  return {
+    root: cleanupTomlSpacing(root.join('\n')),
+    tables: cleanupTomlSpacing(tables.join('\n')),
+  };
+}
+
+function toTomlString(value) {
+  return JSON.stringify(String(value ?? ''));
+}
+
+function getCodexAuthApiKey(profile = {}) {
+  if (profile.apiKey) return profile.apiKey;
+  if (!profile.authJson) return '';
+  try {
+    return parseCodexAuthJson(profile.authJson).apiKey;
+  } catch {
+    return '';
+  }
+}
+
+function readJsonObjectFallback(primary, fallback) {
+  try {
+    return parseJsonObject(primary);
+  } catch {
+    try {
+      return parseJsonObject(fallback);
+    } catch {
+      return {};
+    }
+  }
+}
+
+const Appliers = {
+  claude(existing, p) {
+    const c = JSON.parse(existing);
+    c.env = c.env || {};
+    if (p.apiKey) c.env.ANTHROPIC_API_KEY = p.apiKey;
+    if (p.baseUrl) c.env.ANTHROPIC_BASE_URL = p.baseUrl;
+    if (p.model) c.model = p.model;
+    if (p.opusModel) c.env.ANTHROPIC_DEFAULT_OPUS_MODEL = p.opusModel;
+    if (p.sonnetModel) c.env.ANTHROPIC_DEFAULT_SONNET_MODEL = p.sonnetModel;
+    if (p.haikuModel) c.env.ANTHROPIC_DEFAULT_HAIKU_MODEL = p.haikuModel;
+    if (p.anthropicBetas) c.env.ANTHROPIC_BETAS = p.anthropicBetas;
+    if (p.experimentalAgentTeams === true) c.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = '1';
+    if (p.experimentalAgentTeams === false) delete c.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS;
+    if (isConfiguredBool(p.alwaysThinkingEnabled)) c.alwaysThinkingEnabled = p.alwaysThinkingEnabled;
+    if (p.autoUpdatesChannel) c.autoUpdatesChannel = p.autoUpdatesChannel;
+    if (isConfiguredBool(p.skipDangerousModePermissionPrompt)) c.skipDangerousModePermissionPrompt = p.skipDangerousModePermissionPrompt;
+    if (p.disableTelemetry !== false) {
+      c.env.DISABLE_TELEMETRY = '1';
+      c.env.DISABLE_ERROR_REPORTING = '1';
+      c.env.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC = '1';
+    }
+    return JSON.stringify(c, null, 2) + '\n';
+  },
+  codexAuth(existing, p) {
+    const authMode = normalizeCodexAuthMode(p.authMode || '');
+    const c = p.authJson ? readJsonObjectFallback(p.authJson, existing) : parseJsonObject(existing || '{}');
+    if (authMode === 'chatgpt') c.auth_mode = 'chatgpt';
+    else delete c.auth_mode;
+    if (p.apiKey && authMode !== 'chatgpt') c.OPENAI_API_KEY = p.apiKey;
+    return JSON.stringify(c, null, 2) + '\n';
+  },
+  codexConfig(existing, p) {
+    let t = existing || '';
+    const authMode = normalizeCodexAuthMode(p.authMode || '');
+    const useProvider = authMode === 'api' && !!p.modelProvider;
+    const managedRootKeys = ['model_provider', 'auth_mode', 'forced_login_method'];
+    if (p.model) managedRootKeys.unshift('model');
+
+    t = stripManagedTomlBlock(t, CODEX_MANAGED_START, CODEX_MANAGED_END);
+    t = stripTopLevelTomlKeys(t, managedRootKeys);
+    if (authMode === 'chatgpt') {
+      t = stripTomlTableTree(t, 'model_providers');
+    } else if (p.modelProvider) {
+      t = stripTomlTableTree(t, `model_providers.${p.modelProvider}`);
+    }
+
+    const rootBlock = [];
+    if (p.model || useProvider) rootBlock.push(CODEX_MANAGED_START);
+    if (p.model) rootBlock.push(`model = ${toTomlString(p.model)}`);
+    if (useProvider) rootBlock.push(`model_provider = ${toTomlString(p.modelProvider)}`);
+    if (p.model || useProvider) rootBlock.push(CODEX_MANAGED_END);
+
+    const tableBlock = [];
+    if (useProvider) {
+      tableBlock.push(CODEX_MANAGED_START);
+      tableBlock.push(`[model_providers.${p.modelProvider}]`);
+      if (p.providerName) tableBlock.push(`name = ${toTomlString(p.providerName)}`);
+      if (p.baseUrl) tableBlock.push(`base_url = ${toTomlString(p.baseUrl)}`);
+      tableBlock.push(`wire_api = ${toTomlString(p.wireApi || 'responses')}`);
+      tableBlock.push(CODEX_MANAGED_END);
+    }
+
+    const base = splitTomlRootAndTables(t);
+    const next = [
+      cleanupTomlSpacing([rootBlock.join('\n'), base.root].filter(Boolean).join('\n\n')),
+      cleanupTomlSpacing([tableBlock.join('\n'), base.tables].filter(Boolean).join('\n\n')),
+    ].filter(Boolean).join('\n\n');
+    return next.endsWith('\n') ? next : `${next}\n`;
+  },
+  opencode(existing, p) {
+    const c = JSON.parse(existing);
+    if (p.provider && Object.keys(p.provider).length) c.provider = p.provider;
+    if (p.model) c.model = p.model;
+    return JSON.stringify(c, null, 2) + '\n';
+  },
+};
+
+function escRx(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+// ============================================================
+// UI Helpers
+// ============================================================
+function toast(m, t='info') {
+  const e = document.createElement('div');
+  let colors = t==='success' ? 'border-emerald-500/30 text-emerald-600' : (t==='error' ? 'border-red-500/30 text-red-600' : 'border-primary/30 text-primary');
+  let icon = t==='success' ? `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>` :
+             (t==='error' ? `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>` :
+             `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`);
+
+  e.className = `flex items-center gap-3 px-4 py-3 bg-surface/90 backdrop-blur border shadow-xl rounded-xl text-sm font-medium animate-toast-in pointer-events-auto ${colors}`;
+  e.innerHTML = `${icon} <span>${m}</span>`;
+  document.getElementById('toastContainer').appendChild(e);
+  setTimeout(() => {
+    e.style.opacity = '0';
+    e.style.transform = 'translateY(-10px) scale(0.95)';
+    e.style.transition = 'all 0.3s ease';
+    setTimeout(() => e.remove(), 300);
+  }, 3000);
+}
+
+function esc(s) {
+  if (!s) return '';
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function timeAgo(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleDateString('zh-CN') + ' ' + d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+}
+
+function claudeToggleStateText(value) {
+  if (value === true) return '当前：已开启';
+  if (value === false) return '当前：已关闭';
+  return '当前：未配置';
+}
+
+function renderCodexAuthModeOptions(value) {
+  const current = normalizeCodexAuthMode(value);
+  const options = [
+    ['api', 'API Key'],
+    ['chatgpt', '账号登录 (ChatGPT)'],
+  ];
+  return options.map(([v, label]) => `<option value="${esc(v)}" ${current === v ? 'selected' : ''}>${esc(label)}</option>`).join('');
+}
+
+function getCodexAuthSummary(profile = {}) {
+  const selectedMode = normalizeCodexAuthMode(profile.authMode);
+  if (!profile.authJson) {
+    if (selectedMode === 'chatgpt') {
+      return {
+        title: '未保存账号登录缓存',
+        detail: '账号登录需要 auth.json 中的 tokens 和 last_refresh；应用时会写入 auth_mode = "chatgpt"。',
+        tone: 'warn',
+      };
+    }
+    const hasApiKey = !!getCodexAuthApiKey(profile);
+    return {
+      title: hasApiKey ? 'API Key 模式就绪' : '未保存 API Key',
+      detail: hasApiKey
+        ? '应用时会删除 auth.json 的 auth_mode，并在 config.toml 中写入 provider。'
+        : 'API Key 模式需要 OPENAI_API_KEY，并且 config.toml 中必须设置 provider。',
+      tone: hasApiKey ? 'ok' : 'warn',
+    };
+  }
+  try {
+    const parsed = parseCodexAuthJson(profile.authJson);
+    if (selectedMode === 'chatgpt') {
+      if (!parsed.hasCompleteChatGptAuth) {
+        return {
+          title: '账号登录缓存不完整',
+          detail: `缺少 ${parsed.missingTokenKeys.join('、')}；账号登录需要完整 tokens 和 last_refresh。`,
+          tone: 'warn',
+        };
+      }
+      const parts = [];
+      if (parsed.accountId) parts.push(`账号 ${parsed.accountId}`);
+      if (parsed.lastRefresh) parts.push(`刷新于 ${timeAgo(parsed.lastRefresh)}`);
+      return {
+        title: '账号登录模式就绪',
+        detail: parts.length
+          ? `${parts.join(' · ')}；应用时写入 auth_mode = "chatgpt" 并清理 config.toml provider。`
+          : '已包含完整 tokens；应用时写入 auth_mode = "chatgpt" 并清理 config.toml provider。',
+        tone: 'ok',
+      };
+    }
+    if (parsed.apiKey || profile.apiKey) {
+      return {
+        title: 'API Key 模式就绪',
+        detail: '应用时会删除 auth.json 的 auth_mode，并在 config.toml 中写入 provider。',
+        tone: 'ok',
+      };
+    }
+    if (parsed.hasTokens) {
+      return {
+        title: '当前选择 API Key，但只检测到 tokens',
+        detail: 'API Key 模式不会写入 auth_mode，请确认 auth.json 中有 OPENAI_API_KEY。',
+        tone: 'warn',
+      };
+    }
+    return {
+      title: 'API Key 信息不完整',
+      detail: '请填写 OPENAI_API_KEY，并设置 config.toml 的 Provider ID。',
+      tone: 'warn',
+    };
+  } catch {
+    return {
+      title: 'auth.json 快照格式异常',
+      detail: '当前档案中的 auth.json 不是合法 JSON，应用前需要重新从文件更新。',
+      tone: 'err',
+    };
+  }
+}
+
+function renderToggleCard({ title, desc, value, pn, field, tool = 'claude' }) {
+  const stateClass = value === true ? 'text-emerald-600' : (value === false ? 'text-slate-500' : 'text-amber-600');
+  return `
+    <div class="flex items-center justify-between gap-4 px-4 py-3 bg-slate-50 border border-border rounded-lg min-h-[86px]">
+      <div class="min-w-0">
+        <div class="text-sm font-semibold text-slate-800">${title}</div>
+        <div class="text-[11px] text-slate-500 mt-1">${desc}</div>
+        <div class="text-[10px] ${stateClass} mt-2">${claudeToggleStateText(value)}</div>
+      </div>
+      <label class="toggle-switch shrink-0">
+        <input type="checkbox" ${value === true ? 'checked' : ''} data-p="${esc(pn)}" data-t="${tool}" data-f="${field}" onchange="App.ut(this)">
+        <span class="slider"></span>
+      </label>
+    </div>`;
+}
+
+function togglePw(b) {
+  const i = b.parentElement.querySelector('input');
+  i.type = i.type === 'password' ? 'text' : 'password';
+  b.innerHTML = i.type === 'password'
+    ? `<svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>`
+    : `<svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>`;
+}
+
+const Modal = {
+  show(title, body, footer='') {
+    document.getElementById('modalTitle').textContent = title;
+    document.getElementById('modalBody').innerHTML = body;
+    document.getElementById('modalFooter').innerHTML = footer;
+    document.getElementById('modalOverlay').classList.add('show');
+  },
+  close() { document.getElementById('modalOverlay').classList.remove('show'); },
+};
+
+// ============================================================
+// App Logic
+// ============================================================
+const App = {
+  _pending: null,
+  _pendingTool: '',
+
+  async init() {
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') Modal.close(); });
+    if (!('showOpenFilePicker' in window)) {
+      document.getElementById('mainContent').innerHTML = `
+        <div class="h-full flex items-center justify-center p-8">
+          <div class="max-w-md w-full bg-danger/10 border border-danger/30 rounded-2xl p-6 text-center">
+            <div class="w-12 h-12 bg-danger/20 text-danger rounded-full flex items-center justify-center mx-auto mb-4"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg></div>
+            <h3 class="text-lg font-bold text-danger mb-2">浏览器不支持 File System API</h3>
+            <p class="text-slate-500 text-sm">请使用 Chrome、Edge 或其他现代 Chromium 核心浏览器打开此应用，以支持本地文件直接读写。</p>
+          </div>
+        </div>`;
+      return;
+    }
+    await FS.init();
+    this.render();
+  },
+
+  ensureSelection() {
+    const tool = Store.getSelectedTool();
+    const profiles = Store.getProfiles(tool);
+    if (Object.keys(profiles).length && !Store.getSelected(tool)) {
+      Store.setSelected(tool, Object.keys(profiles)[0]);
+    }
+  },
+
+  render() {
+    this.ensureSelection();
+    this.renderToolTabs();
+    this.renderSidebar();
+    this.renderMain();
+  },
+
+  renderToolTabs() {
+    const tool = Store.getSelectedTool();
+    const ready = toolManagementReady(tool);
+    const wrap = document.getElementById('toolTabs');
+    wrap.innerHTML = TOOL_ORDER.map(key => {
+      const meta = TOOL_META[key];
+      const selected = key === tool;
+      const count = Object.keys(Store.getProfiles(key)).length;
+      return `<button class="px-2.5 py-2 rounded-lg border text-xs font-bold transition-all ${selected ? 'bg-primary/10 border-primary/50 text-primary shadow-sm' : 'bg-surface2 border-border text-slate-500 hover:text-slate-800 hover:border-slate-300'}" onclick="App.selectTool('${key}')">
+        <span class="block">${meta.short}</span>
+        <span class="block text-[10px] mt-1 opacity-70">${count}</span>
+      </button>`;
+	    }).join('');
+    const addLabel = document.getElementById('addProfileBtnLabel');
+    if (addLabel) addLabel.textContent = ready ? `新建 ${TOOL_META[tool].name} 配置` : '先完成右侧文件绑定';
+    const addBtn = document.querySelector('button[onclick="App.showAddProfile()"]');
+    if (addBtn) {
+      addBtn.className = `w-full py-2.5 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${ready ? 'bg-primary hover:bg-primaryHover text-white shadow-sm hover:shadow-md' : 'bg-surface border border-border text-slate-500 hover:text-slate-800 hover:bg-surface2'}`;
+    }
+  },
+
+  async linkFile(key) {
+    try {
+      await FS.link(key);
+      const tool = Store.getSelectedTool();
+      if (toolFileKeys(tool).includes(key) && toolManagementReady(tool)) {
+        localStorage.setItem(this.bindingCollapseKey(tool), '1');
+      }
+      this.render();
+      toast(FILE_DEFS[key].label + ' 已关联', 'success');
+    } catch (e) {
+      if (e.name !== 'AbortError') toast('关联失败: ' + e.message, 'error');
+    }
+  },
+
+  selectTool(tool) {
+    Store.setSelectedTool(tool);
+    this.render();
+  },
+
+  scrollToBinding() {
+    document.getElementById('bindingSection')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  },
+
+  bindingCollapseKey(tool) {
+    return `aiswitch_binding_collapsed_${tool}`;
+  },
+
+  isBindingCollapsed(tool) {
+    if (!toolManagementReady(tool)) return false;
+    const value = localStorage.getItem(this.bindingCollapseKey(tool));
+    return value == null ? true : value === '1';
+  },
+
+  toggleBindingSection(tool) {
+    if (!toolManagementReady(tool)) return;
+    const collapsed = !this.isBindingCollapsed(tool);
+    localStorage.setItem(this.bindingCollapseKey(tool), collapsed ? '1' : '0');
+    const section = document.getElementById('bindingSection');
+    if (section) section.classList.toggle('collapsed', collapsed);
+    document.querySelectorAll('[data-binding-toggle-label]').forEach(label => {
+      label.textContent = collapsed ? '展开' : '收起';
+    });
+    document.querySelectorAll('[data-binding-toggle-icon]').forEach(icon => {
+      icon.classList.toggle('rotate-90', !collapsed);
+    });
+    document.querySelectorAll('[data-binding-toggle-root]').forEach(root => {
+      root.setAttribute('aria-expanded', String(!collapsed));
+    });
+  },
+
+  canManageTool(tool, showToast = true) {
+    if (toolManagementReady(tool)) return true;
+    if (showToast) toast(`请先在右侧完成 ${TOOL_META[tool].name} 的文件绑定`, 'error');
+    this.scrollToBinding();
+    return false;
+  },
+
+  renderSidebar() {
+    const tool = Store.getSelectedTool();
+    const profiles = Store.getProfiles(tool);
+    const active = Store.getActive(tool);
+    const selected = Store.getSelected(tool);
+    const ready = toolManagementReady(tool);
+    const list = document.getElementById('profileList');
+    if (!ready) {
+      const status = toolLinkStatus(tool);
+      const count = Object.keys(profiles).length;
+      list.innerHTML = `
+        <div class="mt-2 border border-dashed border-orange-500/20 rounded-xl bg-orange-500/5 p-4 text-center animate-fade-in">
+          <div class="w-10 h-10 rounded-full bg-orange-500/10 text-orange-500 flex items-center justify-center mx-auto mb-3"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11V7m0 8h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z"/></svg></div>
+          <p class="text-sm font-medium text-orange-700">右侧先完成文件绑定</p>
+          <p class="text-[11px] text-orange-700/70 mt-2 leading-relaxed">需绑定 ${status.requiredKeys.length} 个必选文件：${esc(status.requiredKeys.map(key => FILE_DEFS[key].file).join('、'))}</p>
+          <p class="text-[11px] text-slate-500 mt-3">${count ? `当前已有 ${count} 个档案，绑定完成后解锁管理。` : '绑定完成后即可创建或导入配置。'}</p>
+        </div>`;
+      return;
+    }
+    if (!Object.keys(profiles).length) {
+      list.innerHTML = `
+        <div class="h-44 flex flex-col items-center justify-center text-center px-4 animate-fade-in border border-dashed border-border rounded-xl bg-surface2 mt-2">
+          <div class="w-10 h-10 rounded-full bg-surface2 flex items-center justify-center mb-3 text-slate-500"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/></svg></div>
+          <p class="text-xs text-slate-500 font-medium">暂无 ${TOOL_META[tool].name} 配置<br><span class="text-[10px] text-slate-500 mt-1 block">点击上方按钮新建</span></p>
+        </div>`;
+      return;
+    }
+    list.innerHTML = Object.entries(profiles).map(([name, profile]) => `
+      <div class="group relative p-3.5 mb-2 rounded-xl cursor-pointer transition-all duration-300 border overflow-hidden ${selected===name ? 'bg-primary/10 border-primary/30 shadow-[0_4px_20px_rgba(139,92,246,0.1)]' : 'border-transparent hover:bg-surface2 hover:border-border'}" onclick="App.selectProfile('${esc(name)}')">
+        ${selected===name ? '<div class="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent pointer-events-none"></div><div class="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-l-xl shadow-[0_0_10px_rgba(139,92,246,0.8)]"></div>' : ''}
+        <div class="relative z-10">
+          <div class="flex justify-between items-start mb-1.5 gap-3">
+            <div class="font-bold text-sm tracking-wide ${selected===name ? 'text-primary bg-clip-text text-transparent bg-gradient-to-r from-primary to-blue-400' : 'text-slate-800'}">${esc(name)}</div>
+            ${active===name ? '<span class="px-2 py-0.5 rounded border border-success/30 bg-success/10 text-success text-[10px] font-bold tracking-wider shadow-[0_0_8px_rgba(16,185,129,0.3)]">Active</span>' : ''}
+          </div>
+          <div class="text-[11px] text-slate-500 flex items-center gap-1.5 truncate">
+            <span class="truncate max-w-[128px] block">${esc(profile.description || '无描述')}</span>
+            <span class="w-1 h-1 rounded-full bg-slate-300 flex-shrink-0"></span>
+            <span class="${selected===name ? 'text-slate-500' : ''} flex-shrink-0 font-mono">${profileFieldCount(tool, profile)} 项</span>
+          </div>
+        </div>
+      </div>`).join('');
+  },
+
+  renderBindingSection(tool, opts = {}) {
+    const meta = TOOL_META[tool];
+    const status = toolLinkStatus(tool);
+    const ready = toolManagementReady(tool);
+    const compact = !!opts.compact;
+    const embedded = !!opts.embedded;
+    const collapsed = this.isBindingCollapsed(tool);
+    const requiredLinked = status.requiredKeys.filter(key => FS.isLinked(key)).length;
+    const rows = status.keys.map(key => {
+      const def = FILE_DEFS[key];
+      const linked = FS.isLinked(key);
+      const required = status.requiredKeys.includes(key);
+      const name = linked ? FS.handles[key].name : '尚未关联';
+      return `<div class="flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-50 border border-border">
+        <div class="min-w-0">
+          <div class="flex items-center gap-2 text-sm">
+            <span class="w-2.5 h-2.5 rounded-full flex-shrink-0 ${linked ? 'bg-success shadow-[0_0_10px_rgba(16,185,129,0.8)]' : 'bg-slate-300'}"></span>
+            <strong class="text-slate-800 font-semibold">${def.label}</strong>
+            ${required ? '' : '<span class="px-1.5 py-0.5 rounded bg-surface2 border border-border text-[10px] text-slate-500">可选</span>'}
+          </div>
+          <p class="text-[11px] text-slate-500 mt-1 truncate">${esc(def.path)}</p>
+          <p class="text-[11px] ${linked ? 'text-slate-500' : 'text-orange-700/80'} mt-1 truncate">${esc(name)}</p>
+        </div>
+        <button class="px-3 py-2 rounded-lg text-xs font-medium ${linked ? 'bg-slate-100 hover:bg-slate-200 text-slate-800' : 'bg-primary hover:bg-primaryHover text-white'} transition-all active:scale-95 shrink-0" onclick="App.linkFile('${key}')">${linked ? '更换' : '选择'}</button>
+      </div>`;
+    }).join('');
+    const steps = [
+      `1. 先绑定 ${meta.name} 的必选文件${tool === 'codex' ? '：config.toml 和 auth.json；后者包含 API Key 或 ChatGPT token 登录缓存' : ''}。`,
+      '2. 绑定完成后，可从当前环境导入，或手动创建一个配置档案。',
+      '3. 编辑档案并点击“应用此配置”，即可写回本地文件。',
+    ].map(text => `<li class="${compact ? 'text-[11px]' : 'text-sm'} text-slate-700 leading-relaxed">${text}</li>`).join('');
+
+	    return `
+	      <section class="binding-section ${embedded ? 'embedded' : ''} ${collapsed ? 'collapsed' : ''} glass rounded-2xl border ${ready ? 'border-emerald-500/20' : 'border-orange-500/20'} overflow-hidden ${embedded ? 'mt-5 mb-8' : (compact ? 'mb-6' : 'mb-8')}" id="bindingSection">
+	        ${embedded ? '' : `<div class="binding-header px-6 py-4 border-b border-border flex flex-col md:flex-row md:items-center justify-between gap-3 bg-slate-50 ${ready ? 'cursor-pointer hover:bg-surface2 transition-colors' : ''}" ${ready ? `onclick="App.toggleBindingSection('${tool}')"` : ''}>
+	          <div>
+	            <div class="flex items-center gap-3">
+	              <div class="w-9 h-9 rounded-lg flex items-center justify-center text-white text-xs font-black shadow-inner" style="background:${meta.colorCode}">${meta.short}</div>
+	              <div>
+	                <h3 class="text-base font-bold text-slate-900">${meta.name} 文件绑定</h3>
+	                <p class="binding-hint text-xs text-slate-500 mt-1">文件选择器中可按 <kbd class="bg-surface2 border border-border rounded px-1.5 py-0.5 font-mono text-[10px] text-slate-700">⌘⇧.</kbd> 显示隐藏文件夹。</p>
+	              </div>
+	            </div>
+	          </div>
+	          <div class="flex items-center gap-2">
+	            <div class="px-3 py-1.5 rounded-full text-xs font-bold ${ready ? 'bg-emerald-500/10 text-emerald-700 border border-emerald-500/20' : 'bg-orange-500/10 text-orange-700 border border-orange-500/20'}">
+	              ${ready ? `必选已完成 ${requiredLinked}/${status.requiredKeys.length}` : `必选待完成 ${status.requiredMissing.length}/${status.requiredKeys.length}`}
+	            </div>
+	            ${ready ? `<div class="px-3 py-1.5 rounded-full text-xs font-bold bg-surface2 text-slate-700 border border-border flex items-center gap-1.5">
+	              <svg class="binding-toggle-icon w-3.5 h-3.5" data-binding-toggle-icon fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+	              <span data-binding-toggle-label>${collapsed ? '展开' : '收起'}</span>
+	            </div>` : ''}
+	          </div>
+	        </div>`}
+	        <div class="binding-body p-6 grid grid-cols-1 lg:grid-cols-5 gap-6">
+          <div class="lg:col-span-3 space-y-3">
+            ${rows}
+            <div class="text-[11px] text-slate-500 leading-relaxed bg-slate-50 p-3 rounded-xl border border-border">
+              只有当前工具的必选文件绑定完成后，左侧档案列表和管理操作才会解锁。
+            </div>
+          </div>
+          <div class="lg:col-span-2">
+            <div class="rounded-2xl border border-border bg-slate-50 p-5 h-full">
+              <h4 class="text-sm font-bold text-slate-800 mb-3">使用引导</h4>
+              <ol class="space-y-3">${steps}</ol>
+              <div class="mt-4 text-[11px] ${ready ? 'text-emerald-700/80' : 'text-orange-700/80'} leading-relaxed">
+                ${ready ? '当前工具已完成必选绑定，可以开始导入、新建和切换配置。' : `当前还缺少 ${status.requiredMissing.map(key => FILE_DEFS[key].file).join('、')}，完成后才可管理配置。`}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>`;
+  },
+
+  renderLockedMain(tool) {
+    const meta = TOOL_META[tool];
+    const count = Object.keys(Store.getProfiles(tool)).length;
+    return `
+      <div class="max-w-5xl mx-auto py-10 px-8 lg:px-12 animate-slide-up pb-24">
+        ${this.renderBindingSection(tool)}
+        <div class="rounded-2xl border border-dashed border-orange-500/20 bg-orange-500/5 p-8 text-center">
+          <div class="w-14 h-14 rounded-full bg-orange-500/10 text-orange-500 flex items-center justify-center mx-auto mb-4"><svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m0-10v4m9 1a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
+          <h2 class="text-2xl font-bold text-slate-900">先完成 ${meta.name} 文件绑定</h2>
+          <p class="text-slate-500 mt-3 max-w-2xl mx-auto leading-relaxed">为避免管理一个无法落盘的配置档案，当前工具在文件绑定完成前会锁定左侧列表、新建、编辑和应用操作。</p>
+          <p class="text-sm text-slate-500 mt-4">${count ? `当前已有 ${count} 个 ${meta.name} 档案，绑定完成后会自动恢复可管理状态。` : '绑定完成后，你可以从当前环境导入，或手动创建第一个档案。'}</p>
+        </div>
+      </div>`;
+  },
+
+  renderEmptyMain(tool) {
+    const meta = TOOL_META[tool];
+    return `
+      <div class="max-w-5xl mx-auto py-10 px-8 lg:px-12 animate-slide-up pb-24">
+        ${this.renderBindingSection(tool, { compact: true })}
+        <div class="text-center mb-16 mt-6">
+          <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl border border-border shadow-md mb-8 relative text-white text-2xl font-black" style="background:${meta.colorCode}">
+            <div class="absolute inset-0 opacity-30 blur-xl rounded-full" style="background:${meta.colorCode}"></div>
+            <span class="relative z-10">${meta.short}</span>
+          </div>
+          <h2 class="text-4xl font-extrabold text-slate-900 tracking-tight mb-4">${meta.name} 独立配置</h2>
+          <p class="text-slate-500 text-lg max-w-xl mx-auto leading-relaxed">绑定已经就绪。现在可以只管理 ${meta.name} 的档案、读取与应用，不再和其他工具捆绑。</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+          <div class="glass p-6 rounded-2xl hover:border-primary/50 transition-colors group">
+            <div class="w-10 h-10 rounded-lg bg-blue-500/10 text-blue-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg></div>
+            <h3 class="text-slate-800 font-bold mb-2 text-base">第一步：导入现有环境</h3>
+            <p class="text-sm text-slate-500 leading-relaxed">如果本地文件里已经有一套可用配置，优先从当前环境导入，可以少填很多字段。</p>
+          </div>
+          <div class="glass p-6 rounded-2xl hover:border-primary/50 transition-colors group">
+            <div class="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg></div>
+            <h3 class="text-slate-800 font-bold mb-2 text-base">第二步：创建专属档案</h3>
+            <p class="text-sm text-slate-500 leading-relaxed">如果想手动维护不同环境，也可以直接新建一个 ${meta.name} 的独立配置档案。</p>
+          </div>
+        </div>
+
+        <div class="flex justify-center gap-4">
+          <button class="bg-primary hover:bg-primaryHover text-white px-8 py-3.5 rounded-xl font-bold shadow-sm hover:shadow-md transition-all active:scale-95 flex items-center gap-2" onclick="App.importFromLinked()">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+            从当前环境导入
+          </button>
+          <button class="bg-surface2 hover:bg-border text-slate-800 px-8 py-3.5 rounded-xl font-bold border border-border transition-all active:scale-95" onclick="App.showAddProfile()">手动创建新配置</button>
+        </div>
+      </div>`;
+  },
+
+  renderMain() {
+    const tool = Store.getSelectedTool();
+    const meta = TOOL_META[tool];
+    const sel = Store.getSelected(tool);
+    const c = document.getElementById('mainContent');
+    if (!toolManagementReady(tool)) {
+      c.innerHTML = this.renderLockedMain(tool);
+      return;
+    }
+    if (!sel) {
+      c.innerHTML = this.renderEmptyMain(tool);
+      return;
+    }
+
+    const profile = Store.getProfile(tool, sel);
+    if (!profile) {
+      Store.setSelected(tool, '');
+      this.render();
+      return;
+    }
+
+    const isActive = Store.getActive(tool) === sel;
+    const status = toolLinkStatus(tool);
+    const bindingCollapsed = this.isBindingCollapsed(tool);
+    const requiredLinked = status.requiredKeys.filter(key => FS.isLinked(key)).length;
+    c.innerHTML = `
+      <div class="max-w-5xl mx-auto py-10 px-8 lg:px-12 animate-slide-up pb-32">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10 pb-6 border-b border-border">
+          <div class="min-w-0 flex-1 rounded-xl -m-2 p-2 cursor-pointer hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/30" role="button" tabindex="0" aria-controls="bindingSection" aria-expanded="${!bindingCollapsed}" data-binding-toggle-root onclick="App.toggleBindingSection('${tool}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();App.toggleBindingSection('${tool}')}">
+            <div class="flex items-center gap-3 mb-2">
+              <div class="w-9 h-9 rounded-xl flex items-center justify-center text-white text-xs font-black shadow-inner" style="background:${meta.colorCode}">${meta.short}</div>
+              <h2 class="text-3xl font-extrabold text-slate-900 tracking-tight">${esc(sel)}</h2>
+              ${isActive ? '<span class="px-2.5 py-1 rounded bg-success/10 border border-success/30 text-success text-xs font-bold shadow-[0_0_15px_rgba(16,185,129,0.2)]">CURRENTLY ACTIVE</span>' : ''}
+            </div>
+            <p class="text-slate-500 text-sm flex flex-wrap items-center gap-2">
+              <span>${esc(meta.name)}</span>
+              <span class="text-border">•</span>
+              <span>${esc(profile.description || '无详细描述')}</span>
+              <span class="text-border">•</span>
+              <span class="font-mono text-xs opacity-60">更新于 ${timeAgo(profile.updatedAt)}</span>
+            </p>
+            <div class="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface2 text-slate-700 border border-border text-xs font-bold">
+              <svg class="w-3.5 h-3.5 transition-transform ${bindingCollapsed ? '' : 'rotate-90'}" data-binding-toggle-icon fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+              <span>文件绑定</span>
+              <span class="text-emerald-700">必选已完成 ${requiredLinked}/${status.requiredKeys.length}</span>
+              <span class="text-slate-500" data-binding-toggle-label>${bindingCollapsed ? '展开' : '收起'}</span>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap gap-2 shrink-0">
+            <button class="px-3 py-2 bg-surface hover:bg-surface2 border border-border rounded-lg text-xs font-medium text-slate-700 transition-colors flex items-center gap-1.5" title="从本地文件重新读取覆盖此档案" onclick="App.readLinkedForProfile('${esc(sel)}')">
+              <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> 从文件更新
+            </button>
+            <button class="px-3 py-2 bg-surface hover:bg-surface2 border border-border rounded-lg text-xs font-medium text-slate-700 transition-colors flex items-center gap-1.5" onclick="App.showRename('${esc(sel)}')">
+              <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+            </button>
+            <button class="px-3 py-2 bg-danger/10 hover:bg-danger/20 border border-danger/20 rounded-lg text-xs font-medium text-danger transition-colors flex items-center gap-1.5" onclick="App.confirmDel('${esc(sel)}')">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            </button>
+          </div>
+        </div>
+
+        ${this.renderBindingSection(tool, { compact: true, embedded: true })}
+
+        ${this.toolCard(tool, profile, sel)}
+
+        <div class="action-dock fixed bottom-0 left-80 right-0 p-6 bg-gradient-to-t from-bg via-bg to-transparent z-10 flex justify-center pointer-events-none">
+          <div class="glass px-6 py-4 rounded-2xl flex items-center gap-6 shadow-md pointer-events-auto border-primary/20">
+            <div class="hidden sm:block">
+              <h4 class="text-sm font-bold text-slate-800">一键切换到 ${meta.name}</h4>
+              <p class="text-xs text-slate-500 mt-0.5">仅写入当前工具的关联配置文件，并自动备份。</p>
+            </div>
+            <button class="bg-success hover:bg-[#0ea5e9] text-white px-8 py-3 rounded-xl font-bold text-sm shadow-sm hover:shadow-md transition-all duration-300 active:scale-95 flex items-center gap-2" onclick="App.applyProfile('${esc(sel)}')">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              应用此配置
+            </button>
+          </div>
+        </div>
+      </div>`;
+  },
+
+  toolCard(tool, data, pn) {
+    const meta = TOOL_META[tool];
+    const status = toolLinkStatus(tool);
+    const inputClass = 'w-full bg-slate-50 border border-border rounded-lg px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all font-mono placeholder-slate-400';
+    const labelClass = 'block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2';
+
+    let fields = '';
+    if (tool === 'claude') {
+      fields = `
+        <div class="mb-5 relative input-glow group"><label class="${labelClass}">API Key</label>
+          <div class="relative"><input type="password" value="${esc(data?.apiKey || '')}" placeholder="sk-ant-..." class="${inputClass} pr-10" data-p="${esc(pn)}" data-t="claude" data-f="apiKey" onchange="App.uf(this)">
+          <button class="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md hover:bg-slate-100 transition-colors" onclick="togglePw(this)"><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg></button></div>
+        </div>
+        <div class="mb-5 input-glow"><label class="${labelClass}">Base URL</label><input type="text" value="${esc(data?.baseUrl || '')}" placeholder="https://api.anthropic.com" class="${inputClass}" data-p="${esc(pn)}" data-t="claude" data-f="baseUrl" onchange="App.uf(this)"></div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
+          <div class="input-glow"><label class="${labelClass}">Opus Model</label><input type="text" value="${esc(data?.opusModel || '')}" placeholder="internal-mimo-v2-pro" class="${inputClass}" data-p="${esc(pn)}" data-t="claude" data-f="opusModel" onchange="App.uf(this)"></div>
+          <div class="input-glow"><label class="${labelClass}">Sonnet Model</label><input type="text" value="${esc(data?.sonnetModel || '')}" placeholder="internal-mimo-v2-pro" class="${inputClass}" data-p="${esc(pn)}" data-t="claude" data-f="sonnetModel" onchange="App.uf(this)"></div>
+          <div class="input-glow"><label class="${labelClass}">Haiku Model</label><input type="text" value="${esc(data?.haikuModel || '')}" placeholder="internal-mimo-v2-flash" class="${inputClass}" data-p="${esc(pn)}" data-t="claude" data-f="haikuModel" onchange="App.uf(this)"></div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
+          <div class="input-glow"><label class="${labelClass}">Global Model (可选)</label><input type="text" value="${esc(data?.model || '')}" placeholder="claude-3-5-sonnet-20241022" class="${inputClass}" data-p="${esc(pn)}" data-t="claude" data-f="model" onchange="App.uf(this)"></div>
+          <div class="input-glow"><label class="${labelClass}">Anthropic Betas</label><input type="text" value="${esc(data?.anthropicBetas || '')}" placeholder="context-1m-2025-08-07" class="${inputClass}" data-p="${esc(pn)}" data-t="claude" data-f="anthropicBetas" onchange="App.uf(this)"></div>
+          <div class="input-glow"><label class="${labelClass}">Auto Updates Channel</label><input type="text" value="${esc(data?.autoUpdatesChannel || '')}" placeholder="stable" class="${inputClass}" data-p="${esc(pn)}" data-t="claude" data-f="autoUpdatesChannel" onchange="App.uf(this)"></div>
+        </div>
+        <div class="mb-3">
+          <div class="${labelClass}">功能开关</div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+          ${renderToggleCard({ title: 'Experimental Agent Teams', desc: '写入 env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1', value: data?.experimentalAgentTeams, pn, field: 'experimentalAgentTeams' })}
+          ${renderToggleCard({ title: 'Always Thinking', desc: '控制顶层 alwaysThinkingEnabled 布尔值', value: data?.alwaysThinkingEnabled, pn, field: 'alwaysThinkingEnabled' })}
+          ${renderToggleCard({ title: '跳过危险模式确认', desc: '控制 skipDangerousModePermissionPrompt', value: data?.skipDangerousModePermissionPrompt, pn, field: 'skipDangerousModePermissionPrompt' })}
+          <div class="flex items-center justify-between gap-4 px-4 py-3 bg-slate-50 border border-border rounded-lg min-h-[86px]">
+            <div class="min-w-0">
+              <div class="text-sm font-semibold text-slate-800">隐私与静默模式</div>
+              <div class="text-[11px] text-slate-500 mt-1">自动设置 DISABLE_TELEMETRY 等防护</div>
+              <div class="text-[10px] ${data?.disableTelemetry !== false ? 'text-emerald-600' : 'text-slate-500'} mt-2">当前：${data?.disableTelemetry !== false ? '已开启' : '已关闭'}</div>
+            </div>
+            <label class="toggle-switch shrink-0">
+              <input type="checkbox" ${data?.disableTelemetry !== false ? 'checked' : ''} data-p="${esc(pn)}" data-t="claude" data-f="disableTelemetry" onchange="App.ut(this)">
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>`;
+    } else if (tool === 'codex') {
+      const authSummary = getCodexAuthSummary(data);
+      const authSummaryClass = authSummary.tone === 'ok'
+        ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-700'
+        : (authSummary.tone === 'err' ? 'bg-red-500/10 border-red-500/20 text-red-700' : 'bg-amber-500/10 border-amber-500/20 text-amber-700');
+      const isChatGptMode = normalizeCodexAuthMode(data?.authMode) === 'chatgpt';
+      const providerDisabled = isChatGptMode ? 'disabled' : '';
+      const providerWrapClass = isChatGptMode ? 'opacity-50' : '';
+      const providerHelpText = isChatGptMode
+        ? '账号登录模式会从 config.toml 删除 provider，不写入此字段。'
+        : 'API Key 模式必填；应用时写入 config.toml 的 model_provider。';
+      fields = `
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+          <div class="input-glow"><label class="${labelClass}">登录方式</label>
+            <select class="${inputClass} appearance-none cursor-pointer" data-p="${esc(pn)}" data-t="codex" data-f="authMode" onchange="App.uf(this)">
+              ${renderCodexAuthModeOptions(data?.authMode)}
+            </select>
+            <p class="text-[10px] text-slate-500 mt-1.5 ml-1">API Key 会删除 auth_mode 并写入 provider；账号登录会写入 auth_mode="chatgpt" 并删除 provider。</p>
+          </div>
+          <div class="relative input-glow group"><label class="${labelClass}">API Key</label>
+            <div class="relative"><input type="password" value="${esc(data?.apiKey || '')}" placeholder="sk-..." class="${inputClass} pr-10" data-p="${esc(pn)}" data-t="codex" data-f="apiKey" onchange="App.uf(this)">
+            <button class="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md hover:bg-slate-100 transition-colors" onclick="togglePw(this)"><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg></button></div>
+          </div>
+        </div>
+        <div class="mb-5 rounded-xl border ${authSummaryClass} px-4 py-3 flex items-start gap-3">
+          <svg class="w-5 h-5 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0-1.105.895-2 2-2s2 .895 2 2-.895 2-2 2-2-.895-2-2zm-7 8a7 7 0 0114 0M5 19h14M7 7a4 4 0 118 0"/></svg>
+          <div class="min-w-0">
+            <div class="text-sm font-semibold">${esc(authSummary.title)}</div>
+            <div class="text-[11px] opacity-75 mt-1 leading-relaxed">${esc(authSummary.detail)}</div>
+            <div class="text-[10px] opacity-60 mt-2 leading-relaxed">可通过“从文件更新”重新读取 auth.json；导出配置库时会包含该敏感登录缓存。</div>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+          <div class="input-glow"><label class="${labelClass}">Model</label><input type="text" value="${esc(data?.model || '')}" placeholder="gpt-4" class="${inputClass}" data-p="${esc(pn)}" data-t="codex" data-f="model" onchange="App.uf(this)"></div>
+          <div class="input-glow ${providerWrapClass}"><label class="${labelClass}">Provider ID</label><input type="text" value="${esc(data?.modelProvider || '')}" placeholder="openai" class="${inputClass}" data-p="${esc(pn)}" data-t="codex" data-f="modelProvider" onchange="App.uf(this)" ${providerDisabled}><p class="text-[10px] text-slate-500 mt-1.5 ml-1">${providerHelpText}</p></div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+          <div class="input-glow ${providerWrapClass}"><label class="${labelClass}">Provider Name</label><input type="text" value="${esc(data?.providerName || '')}" placeholder="OpenAI" class="${inputClass}" data-p="${esc(pn)}" data-t="codex" data-f="providerName" onchange="App.uf(this)" ${providerDisabled}></div>
+          <div class="input-glow ${providerWrapClass}"><label class="${labelClass}">Base URL</label><input type="text" value="${esc(data?.baseUrl || '')}" placeholder="https://api.openai.com/v1" class="${inputClass}" data-p="${esc(pn)}" data-t="codex" data-f="baseUrl" onchange="App.uf(this)" ${providerDisabled}></div>
+        </div>
+        <div class="input-glow ${providerWrapClass}"><label class="${labelClass}">Wire API</label>
+          <select class="${inputClass} appearance-none cursor-pointer" data-p="${esc(pn)}" data-t="codex" data-f="wireApi" onchange="App.uf(this)" ${providerDisabled}>
+            <option value="responses" ${data?.wireApi==='responses' ? 'selected' : ''}>responses</option>
+            <option value="chat" ${data?.wireApi==='chat' ? 'selected' : ''}>chat</option>
+          </select>
+        </div>`;
+    } else {
+      const pj = data?.provider ? JSON.stringify(data.provider, null, 2) : '';
+      fields = `
+        <div class="mb-5 input-glow"><label class="${labelClass}">Model</label><input type="text" value="${esc(data?.model || '')}" placeholder="claude-3-5-sonnet" class="${inputClass}" data-p="${esc(pn)}" data-t="opencode" data-f="model" onchange="App.uf(this)"></div>
+        <div class="input-glow"><label class="${labelClass}">Provider JSON</label>
+          <textarea rows="6" placeholder='{\n  "anthropic": {\n    "options": {\n      "apiKey": "..."\n    }\n  }\n}' class="${inputClass} resize-y" data-p="${esc(pn)}" data-t="opencode" data-f="provider" onchange="App.upj(this)">${esc(pj)}</textarea>
+        </div>`;
+    }
+
+    const statusBox = status.requiredMissing.length
+      ? `<div class="mt-5 px-4 py-3 rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-start gap-3">
+          <svg class="w-5 h-5 text-orange-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+          <div class="text-sm text-orange-700/80 leading-relaxed">仍有必选文件未关联：${esc(status.requiredMissing.map(key => FILE_DEFS[key].file).join('、'))}。当前可修改档案，但无法写回这些文件。</div>
+        </div>`
+      : status.optionalMissing.length
+      ? `<div class="mt-5 px-4 py-3 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-start gap-3">
+          <svg class="w-5 h-5 text-blue-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <div class="text-sm text-blue-700/80 leading-relaxed">可选文件未关联：${esc(status.optionalMissing.map(key => FILE_DEFS[key].file).join('、'))}。当前仍可管理必选配置，相关功能会在绑定后启用。</div>
+        </div>`
+      : `<div class="mt-5 px-4 py-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-start gap-3">
+          <svg class="w-5 h-5 text-emerald-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          <div class="text-sm text-emerald-700/80 leading-relaxed">当前工具关联完整：${esc(status.summary)}</div>
+        </div>`;
+
+    return `
+      <div class="bg-surface/40 backdrop-blur-sm border border-border rounded-2xl overflow-hidden shadow-lg transition-all duration-300 hover:border-slate-300">
+        <div class="p-5 flex items-center justify-between border-b border-border bg-slate-50">
+          <div class="flex items-center gap-4">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center font-black text-white text-xs shadow-inner" style="background:${meta.colorCode}">${meta.short}</div>
+            <div>
+              <h3 class="text-base font-bold text-slate-800">${meta.name}</h3>
+              <p class="text-xs text-slate-500 mt-1">${esc(status.summary)}</p>
+            </div>
+          </div>
+          <span class="${meta.badgeClass} text-xs font-mono">${profileFieldCount(tool, data)} 项已填</span>
+        </div>
+        <div class="bg-slate-50">
+          <div class="p-6">${fields}${statusBox}</div>
+        </div>
+      </div>`;
+  },
+
+  uf(el) {
+    const { p, t, f } = el.dataset;
+    const profile = Store.getProfile(t, p);
+    if (!profile) return;
+    profile[f] = t === 'codex' && f === 'authMode' ? normalizeCodexAuthMode(el.value) : el.value;
+    Store.saveProfile(t, p, profile);
+    if (t === 'codex' && f === 'authMode') {
+      this.render();
+      return;
+    }
+    this.renderSidebar();
+  },
+
+  ut(el) {
+    const { p, t, f } = el.dataset;
+    const profile = Store.getProfile(t, p);
+    if (!profile) return;
+    profile[f] = el.checked;
+    Store.saveProfile(t, p, profile);
+    this.renderSidebar();
+  },
+
+  upj(el) {
+    const { p, t } = el.dataset;
+    const profile = Store.getProfile(t, p);
+    if (!profile) return;
+    try {
+      profile.provider = JSON.parse(el.value || '{}');
+      Store.saveProfile(t, p, profile);
+      el.style.borderColor = '';
+      this.renderSidebar();
+    } catch {
+      el.style.borderColor = '#ef4444';
+    }
+  },
+
+  selectProfile(name) {
+    const tool = Store.getSelectedTool();
+    if (!this.canManageTool(tool)) return;
+    Store.setSelected(tool, name);
+    this.render();
+  },
+
+  logLine(log, status, text) {
+    let icon = status === 'ok' ? '✓' : (status === 'warn' ? '⚠' : (status === 'err' ? '✗' : '•'));
+    let clz = status === 'ok' ? 'log-ok' : (status === 'warn' ? 'log-warn' : (status === 'err' ? 'log-err' : 'log-info'));
+    log.innerHTML += `<span class="${clz} block my-0.5">${icon} ${text}</span>`;
+    log.scrollTop = log.scrollHeight;
+  },
+
+  async loadToolFromLinked(tool, profile, log) {
+    let found = 0;
+    if (tool === 'claude') {
+      if (FS.isLinked('claude')) {
+        try {
+          const c = await FS.read('claude');
+          if (c) {
+            Object.assign(profile, Parsers.claude(c));
+            this.logLine(log, 'ok', 'Claude Code: 成功解析配置');
+            found += 1;
+          } else this.logLine(log, 'warn', 'Claude Code: 读取为空');
+        } catch (e) { this.logLine(log, 'err', `Claude Code: ${esc(e.message)}`); }
+      } else this.logLine(log, 'warn', 'Claude Code: 未关联，跳过');
+      return found;
+    }
+    if (tool === 'codex') {
+      if (FS.isLinked('codexConfig')) {
+        try {
+          const c = await FS.read('codexConfig');
+          if (c) {
+            Object.assign(profile, Parsers.codexConfig(c));
+            this.logLine(log, 'ok', 'Codex config.toml: 成功解析');
+            found += 1;
+          } else this.logLine(log, 'warn', 'Codex config.toml: 读取为空');
+        } catch (e) { this.logLine(log, 'err', `Codex config: ${esc(e.message)}`); }
+      } else this.logLine(log, 'warn', 'Codex config: 未关联，跳过');
+
+      if (FS.isLinked('codexAuth')) {
+        try {
+          const c = await FS.read('codexAuth');
+          if (c) {
+            const auth = Parsers.codexAuth(c);
+            profile.authJson = auth.authJson;
+            profile.authMode = auth.authMode;
+            profile.apiKey = auth.apiKey || profile.apiKey || '';
+            if (auth.authMode === 'chatgpt') {
+              profile.modelProvider = '';
+              profile.providerName = '';
+              profile.baseUrl = '';
+              profile.wireApi = 'responses';
+            }
+            if (auth.authMode === 'chatgpt' && auth.hasCompleteChatGptAuth) {
+              this.logLine(log, 'ok', `Codex auth.json: 已读取账号登录缓存${auth.accountId ? ` (${esc(auth.accountId)})` : ''}`);
+            } else if (auth.authMode === 'chatgpt' && auth.hasTokens) {
+              this.logLine(log, 'warn', `Codex auth.json: 账号登录缓存不完整，缺少 ${esc(auth.missingTokenKeys.join('、'))}`);
+            } else if (auth.hasTokens) {
+              this.logLine(log, 'warn', 'Codex auth.json: 发现 tokens，但当前会按 API Key 模式处理');
+            } else if (auth.apiKey) {
+              this.logLine(log, 'ok', 'Codex auth.json: 已读取 API Key 模式');
+            } else {
+              this.logLine(log, 'warn', 'Codex auth.json: 未发现 tokens 或 OPENAI_API_KEY');
+            }
+            found += 1;
+          } else this.logLine(log, 'warn', 'Codex auth.json: 读取为空');
+        } catch (e) { this.logLine(log, 'err', `Codex auth: ${esc(e.message)}`); }
+      } else this.logLine(log, 'warn', 'Codex auth.json: 未关联，跳过登录缓存读取');
+      return found;
+    }
+    if (FS.isLinked('opencode')) {
+      try {
+        const c = await FS.read('opencode');
+        if (c) {
+          Object.assign(profile, Parsers.opencode(c));
+          this.logLine(log, 'ok', 'OpenCode: 成功解析配置');
+          found += 1;
+        } else this.logLine(log, 'warn', 'OpenCode: 读取为空');
+      } catch (e) { this.logLine(log, 'err', `OpenCode: ${esc(e.message)}`); }
+    } else this.logLine(log, 'warn', 'OpenCode: 未关联，跳过');
+    return found;
+  },
+
+  // ============================================================
+  // Modals
+  // ============================================================
+  showAddProfile() {
+    const tool = Store.getSelectedTool();
+    if (!this.canManageTool(tool)) return;
+    const meta = TOOL_META[tool];
+    const inputClass = 'w-full bg-slate-50 border border-border rounded-lg px-4 py-3 text-sm text-slate-800 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all placeholder-slate-400';
+    const btnSecondary = 'px-5 py-2.5 rounded-xl font-medium text-slate-700 hover:text-slate-900 hover:bg-slate-100 transition-colors';
+    const btnPrimary = 'px-5 py-2.5 bg-primary hover:bg-primaryHover text-white rounded-xl font-bold shadow-lg shadow-primary/20 transition-all active:scale-95';
+
+    Modal.show(`✨ 新建 ${meta.name} 配置`, `
+      <div class="space-y-5">
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">配置名称</label>
+          <input type="text" id="npName" placeholder="例如: gpt-4o-proxy" class="${inputClass}">
+          <p class="text-[11px] text-slate-500 mt-2">支持字母、数字、中文、连字符、下划线，不超过50字符。</p>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">描述 (可选)</label>
+          <input type="text" id="npDesc" placeholder="例如: 日常使用的代理接口配置" class="${inputClass}">
+        </div>
+      </div>`,
+      `<button class="${btnSecondary}" onclick="Modal.close()">取消</button><button class="${btnPrimary}" onclick="App.doAdd()">立即创建</button>`);
+    setTimeout(() => document.getElementById('npName')?.focus(), 100);
+  },
+
+  doAdd() {
+    const tool = Store.getSelectedTool();
+    if (!this.canManageTool(tool)) return;
+    const name = document.getElementById('npName').value.trim();
+    const desc = document.getElementById('npDesc').value.trim();
+    if (!name) { toast('请输入配置名称', 'error'); return; }
+    if (!/^[a-zA-Z0-9_\u4e00-\u9fff][a-zA-Z0-9_\-\u4e00-\u9fff]{0,49}$/.test(name)) { toast('名称格式不正确', 'error'); return; }
+    if (Store.getProfile(tool, name)) { toast('该名称已存在', 'error'); return; }
+    Store.saveProfile(tool, name, emptyProfile(tool, desc));
+    Store.setSelected(tool, name);
+    Modal.close();
+    this.render();
+    toast('配置档案创建成功', 'success');
+  },
+
+  showRename(name) {
+    if (!this.canManageTool(Store.getSelectedTool())) return;
+    const inputClass = 'w-full bg-slate-50 border border-border rounded-lg px-4 py-3 text-sm text-slate-800 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all font-bold';
+    Modal.show('✏️ 重命名档案', `<div><label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">新名称</label><input type="text" id="rnInput" value="${esc(name)}" class="${inputClass}"></div>`, `<button class="px-5 py-2.5 rounded-xl font-medium text-slate-700 hover:text-slate-900 hover:bg-slate-100 transition-colors" onclick="Modal.close()">取消</button><button class="px-5 py-2.5 bg-primary hover:bg-primaryHover text-white rounded-xl font-bold shadow-lg shadow-primary/20 transition-all active:scale-95" onclick="App.doRename('${esc(name)}')">确认修改</button>`);
+    setTimeout(() => {
+      const e = document.getElementById('rnInput');
+      e?.focus();
+      e?.select();
+    }, 100);
+  },
+
+  doRename(oldName) {
+    const tool = Store.getSelectedTool();
+    if (!this.canManageTool(tool)) return;
+    const newName = document.getElementById('rnInput').value.trim();
+    if (!newName || newName === oldName) { Modal.close(); return; }
+    if (Store.getProfile(tool, newName)) { toast('该名称已存在', 'error'); return; }
+    Store.renameProfile(tool, oldName, newName);
+    Store.setSelected(tool, newName);
+    Modal.close();
+    this.render();
+    toast('重命名成功', 'success');
+  },
+
+  confirmDel(name) {
+    const tool = Store.getSelectedTool();
+    if (!this.canManageTool(tool)) return;
+    Modal.show('🗑 确认删除', `<div class="py-2 text-slate-700">您确定要永久删除 ${TOOL_META[tool].name} 配置 <strong class="text-slate-900 bg-slate-100 px-2 py-0.5 rounded ml-1">${esc(name)}</strong> 吗？<br><br><span class="text-sm text-red-600">此操作无法撤销。</span></div>`, `<button class="px-5 py-2.5 rounded-xl font-medium text-slate-700 hover:text-slate-900 hover:bg-slate-100 transition-colors" onclick="Modal.close()">取消</button><button class="px-5 py-2.5 bg-danger hover:bg-red-600 text-white rounded-xl font-bold shadow-lg shadow-danger/20 transition-all active:scale-95" onclick="App.doDel('${esc(name)}')">确认删除</button>`);
+  },
+
+  doDel(name) {
+    const tool = Store.getSelectedTool();
+    if (!this.canManageTool(tool)) return;
+    Store.deleteProfile(tool, name);
+    Modal.close();
+    this.render();
+    toast('档案已删除', 'success');
+  },
+
+  // ============================================================
+  // Import from linked files
+  // ============================================================
+  async importFromLinked() {
+    const tool = Store.getSelectedTool();
+    const meta = TOOL_META[tool];
+    if (!this.canManageTool(tool)) return;
+
+    const inputClass = 'w-full bg-slate-50 border border-border rounded-lg px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all placeholder-slate-400';
+    const defaultName = uniqueName(Store.getProfiles(tool), toolDefaultImportName(tool));
+    Modal.show(`📥 从 ${meta.name} 环境导入`, `
+      <div class="space-y-4">
+        <div><label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">保存为档案名称</label><input type="text" id="ifName" value="${esc(defaultName)}" class="${inputClass} font-bold text-primary"></div>
+        <div><label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">描述</label><input type="text" id="ifDesc" placeholder="当前系统正在使用的配置" class="${inputClass}"></div>
+        <div class="mt-4 border border-border rounded-xl overflow-hidden bg-slate-50 relative">
+          <div class="bg-surface2 px-3 py-1.5 text-[10px] font-mono text-slate-500 flex items-center gap-2 border-b border-border"><span class="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></span>读取日志</div>
+          <div id="ifLog" class="p-4 font-mono text-xs leading-relaxed max-h-[160px] overflow-y-auto whitespace-pre-wrap">读取中...\n</div>
+        </div>
+      </div>`,
+      `<button class="px-5 py-2.5 rounded-xl font-medium text-slate-700 hover:text-slate-900 hover:bg-slate-100 transition-colors" onclick="Modal.close()">取消</button><button class="px-5 py-2.5 bg-primary hover:bg-primaryHover text-white rounded-xl font-bold shadow-lg shadow-primary/20 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none" id="ifOk" disabled onclick="App.finishImport()">保存档案</button>`);
+
+    const log = document.getElementById('ifLog');
+    const profile = emptyProfile(tool, '从文件导入');
+    const found = await this.loadToolFromLinked(tool, profile, log);
+    this.logLine(log, 'info', `读取扫描结束，共发现 ${found} 个有效来源。`);
+    this._pending = profile;
+    this._pendingTool = tool;
+    document.getElementById('ifOk').disabled = false;
+  },
+
+  finishImport() {
+    const tool = this._pendingTool || Store.getSelectedTool();
+    if (!this.canManageTool(tool)) return;
+    const name = document.getElementById('ifName').value.trim();
+    const desc = document.getElementById('ifDesc').value.trim();
+    if (!name) { toast('请提供一个配置名称', 'error'); return; }
+    if (Store.getProfile(tool, name)) { toast('保存失败：档案名称已存在', 'error'); return; }
+    if (desc) this._pending.description = desc;
+    Store.saveProfile(tool, name, this._pending);
+    Store.setSelectedTool(tool);
+    Store.setSelected(tool, name);
+    Modal.close();
+    this.render();
+    toast('🎉 配置成功导入并保存', 'success');
+  },
+
+  async readLinkedForProfile(name) {
+    const tool = Store.getSelectedTool();
+    if (!this.canManageTool(tool)) return;
+    const profile = Store.getProfile(tool, name);
+    if (!profile) return;
+    const log = { innerHTML: '', scrollTop: 0, scrollHeight: 0 };
+    const updated = await this.loadToolFromLinked(tool, profile, log);
+    Store.saveProfile(tool, name, profile);
+    this.render();
+    toast(`已成功从本地拉取更新了 ${updated} 项来源`, 'success');
+  },
+
+  // ============================================================
+  // Apply - write directly to files
+  // ============================================================
+  async applyProfile(name) {
+    const tool = Store.getSelectedTool();
+    const meta = TOOL_META[tool];
+    const profile = Store.getProfile(tool, name);
+    if (!profile) return;
+    if (!this.canManageTool(tool)) return;
+
+    Modal.show('🚀 应用配置到系统',
+      `<div class="border border-border rounded-xl overflow-hidden bg-slate-50 relative shadow-inner">
+        <div class="bg-surface px-4 py-2 text-xs font-mono text-slate-700 flex items-center justify-between border-b border-border">
+          <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.8)]"></span> 执行终端</div>
+          <span class="opacity-50">Target: ${esc(meta.name)} / ${esc(name)}</span>
+        </div>
+        <div id="aLog" class="p-5 font-mono text-xs leading-loose h-[250px] overflow-y-auto whitespace-pre-wrap text-slate-700">➜ 初始化部署序列...\n</div>
+      </div>`,
+      `<button class="px-5 py-2.5 bg-surface2 hover:bg-border text-slate-800 rounded-xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed" id="aClose" disabled onclick="Modal.close()">完成并关闭</button>`);
+
+    const log = document.getElementById('aLog');
+    const add = (cls, msg) => {
+      log.innerHTML += `<span class="${cls} block">${msg}</span>`;
+      log.scrollTop = log.scrollHeight;
+    };
+
+    add('text-blue-600', '[SYS] 执行安全性备份快照...');
+    try {
+      await Backups.createBackup();
+      add('log-ok', '      └─ OK: 本地备份创建成功');
+    } catch (e) {
+      add('log-warn', '      └─ WARN: 备份模块异常: ' + e.message);
+    }
+    add('', '');
+
+    let applied = 0;
+    let canMarkActive = false;
+
+    if (tool === 'claude') {
+      if (!FS.isLinked('claude')) {
+        add('log-warn', '       └─ SKIP: settings.json 未关联');
+      } else if (!claudeFieldCount(profile)) {
+        add('log-warn', '       └─ SKIP: 当前档案没有可写入字段');
+      } else {
+        add('text-amber-600', '[TASK] 覆盖 Claude Code 核心配置与环境变量...');
+        try {
+          const ex = await FS.read('claude');
+          if (ex) {
+            await FS.write('claude', Appliers.claude(ex, profile));
+            add('log-ok', '       └─ OK: settings.json 写入成功');
+            applied += 1;
+            canMarkActive = true;
+          } else add('log-warn', '       └─ SKIP: 目标文件无内容');
+        } catch (e) { add('log-err', '       └─ ERR: ' + e.message); }
+      }
+    } else if (tool === 'codex') {
+      const codexAuthMode = normalizeCodexAuthMode(profile.authMode || '');
+      const isChatGptMode = codexAuthMode === 'chatgpt';
+      const chatGptAuthValidation = isChatGptMode ? validateCodexChatGptAuth(profile.authJson) : null;
+      let codexReady = true;
+      let codexApplied = 0;
+
+      if (isChatGptMode && !chatGptAuthValidation.ok) {
+        codexReady = false;
+        add('log-warn', `       └─ SKIP: 账号登录缓存不完整，缺少 ${chatGptAuthValidation.missing.join('、')}`);
+      }
+      if (!isChatGptMode && !profile.modelProvider) {
+        codexReady = false;
+        add('log-warn', '       └─ SKIP: API Key 模式必须配置 Provider ID，config.toml 需要写入 model_provider');
+      }
+
+      if (codexReady) {
+        add('text-emerald-600', `[TASK] 切换 Codex CLI 到 ${isChatGptMode ? '账号登录' : 'API Key'} 模式...`);
+
+        if (!FS.isLinked('codexAuth')) {
+          add('log-warn', '       └─ SKIP: auth.json 未关联');
+        } else {
+          try {
+            const ex = await FS.read('codexAuth');
+            await FS.write('codexAuth', Appliers.codexAuth(ex || '{}', profile));
+            add('log-ok', isChatGptMode
+              ? '       └─ OK: auth.json 已写入 auth_mode = "chatgpt"'
+              : '       └─ OK: auth.json 已删除 auth_mode');
+            applied += 1;
+            codexApplied += 1;
+          } catch (e) { add('log-err', '       └─ ERR: ' + e.message); }
+        }
+
+        if (!FS.isLinked('codexConfig')) {
+          add('log-warn', '       └─ SKIP: config.toml 未关联');
+        } else {
+          try {
+            const ex = await FS.read('codexConfig');
+            await FS.write('codexConfig', Appliers.codexConfig(ex || '', profile));
+            add('log-ok', isChatGptMode
+              ? '       └─ OK: config.toml 已清理 provider'
+              : '       └─ OK: config.toml 已写入 provider');
+            applied += 1;
+            codexApplied += 1;
+          } catch (e) { add('log-err', '       └─ ERR: ' + e.message); }
+        }
+
+        canMarkActive = codexApplied === 2;
+        if (!canMarkActive) add('log-warn', '       └─ WARN: Codex 需要 auth.json 和 config.toml 都写入成功才会标记为当前配置');
+      }
+    } else {
+      if (!FS.isLinked('opencode')) {
+        add('log-warn', '       └─ SKIP: opencode.json 未关联');
+      } else if (!(profile.model || Object.keys(profile.provider || {}).length)) {
+        add('log-warn', '       └─ SKIP: 当前档案没有可写入字段');
+      } else {
+        add('text-violet-600', '[TASK] 同步 OpenCode 工作区变量...');
+        try {
+          const ex = await FS.read('opencode');
+          if (ex) {
+            await FS.write('opencode', Appliers.opencode(ex, profile));
+            add('log-ok', '       └─ OK: opencode.json 数据合并');
+            applied += 1;
+            canMarkActive = true;
+          } else add('log-warn', '       └─ SKIP: 目标文件无内容');
+        } catch (e) { add('log-err', '       └─ ERR: ' + e.message); }
+      }
+    }
+
+    add('', '');
+    add('log-info', `➜ 序列执行完毕。仅影响 ${meta.name} 的 ${applied} 个配置节点。`);
+    if (canMarkActive) Store.setActive(tool, name);
+    this.render();
+    document.getElementById('aClose').disabled = false;
+    document.getElementById('aClose').classList.add('bg-primary', 'text-white', 'hover:bg-primaryHover');
+    document.getElementById('aClose').classList.remove('bg-surface2', 'text-slate-800');
+  },
+
+  // ============================================================
+  // Export / Import profiles JSON
+  // ============================================================
+  exportProfiles() {
+    const data = Store.load();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `agent-switchboard-export-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast('配置库已完整导出', 'success');
+  },
+
+  importProfilesFromFile() {
+    const input = document.getElementById('jsonImportInput');
+    input.onchange = e => {
+      const f = e.target.files[0];
+      if (!f) return;
+      const r = new FileReader();
+      r.onload = ev => {
+        try {
+          const data = JSON.parse(ev.target.result);
+          const count = Store.mergeImportData(data);
+          if (!count) throw new Error('未发现可导入的配置');
+          this.render();
+          toast(`成功加载了 ${count} 个配置档案`, 'success');
+        } catch (err) {
+          toast('导入失败: ' + err.message, 'error');
+        }
+      };
+      r.readAsText(f);
+      input.value = '';
+    };
+    input.click();
+  },
+};
+
+window.App = App;
+window.Modal = Modal;
+window.togglePw = togglePw;
+
+App.init();
+</script>
+</body>
+</html>

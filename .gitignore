@@ -1,0 +1,13 @@
+.DS_Store
+.vercel/
+
+# Local env files
+.env
+.env.*
+!.env.example
+
+# Exported profile and backup files may contain API keys or login caches.
+agent-switchboard-export-*.json
+aiswitch-backup-*.json
+*-backup-*.json
+
