@@ -1,116 +1,124 @@
+<div align="center">
+
 # Agent Switchboard
 
-A local-only switchboard for AI coding tool profiles.
+**A local-only profile switcher for Claude Code, Codex CLI, and OpenCode.**
 
-Agent Switchboard 是一个单文件静态 Web 工具，用来在本机管理和切换 AI 编程工具的配置档案。它通过浏览器 File System Access API 读取和写回你主动选择的本地配置文件，不需要后端服务，也不会上传配置内容。
+[中文](README.zh-CN.md) · [GitHub](https://github.com/xzulab/AgentSwitchboard) · [License](LICENSE)
 
-适合经常在不同模型、不同 API 网关、不同登录方式之间切换的开发者。
+</div>
 
-## 为什么需要它
+```text
+Open Source: https://github.com/xzulab/AgentSwitchboard
+```
 
-很多 AI 编程工具的配置都保存在本地文件里。手动改配置容易出错，也不方便在多个环境之间切换。
+Agent Switchboard helps you manage local AI coding tool configurations as named profiles. Switch between models, API gateways, and authentication modes without manually editing config files.
 
-Agent Switchboard 把这些本地配置整理成可命名的档案：
+It runs as a static web page. There is no backend, no database, and no upload step. The browser only reads and writes files that you explicitly select.
 
-- 为 Claude Code、Codex CLI、OpenCode 分别维护配置档案
-- 从当前本地配置文件导入已有环境
-- 一键应用指定档案，写入前自动保存本地快照
-- 导入、导出 Agent Switchboard 自身的档案库
-- Codex CLI 支持 `config.toml` 模型路由、`auth_mode`、`auth.json` 登录缓存
-- 无服务端、无数据库，配置只保存在浏览器本地存储和你授权的本地文件中
+## Preview
 
-## 支持的配置文件
+<p align="center">
+  <img src="docs/guide_en.png" alt="Agent Switchboard guide" width="880">
+</p>
 
-- Claude Code: `~/.claude/settings.json`
-- Codex CLI config: `~/.codex/config.toml`
-- Codex CLI auth: `~/.codex/auth.json`
-- OpenCode: `~/.config/opencode/opencode.json`
+## Highlights
 
-## 浏览器要求
+- **Local first**: profiles stay in browser storage and authorized local files.
+- **Multi-tool**: manage Claude Code, Codex CLI, and OpenCode separately.
+- **Safe apply**: writes selected profiles back to disk with a snapshot before changes.
+- **Codex ready**: supports `config.toml`, `auth_mode`, `auth.json`, API Key, and ChatGPT Session profiles.
+- **Bilingual UI**: auto-detects Chinese or English, with manual switching in the sidebar.
+- **Static deploy**: works on `localhost` or any HTTPS static host.
 
-Agent Switchboard 依赖 File System Access API，需要使用支持该 API 的 Chromium 系浏览器，例如 Chrome 或 Edge。
+## Screenshots
 
-本地预览建议通过 `localhost` 访问。线上部署需要 HTTPS，Vercel 默认提供 HTTPS。
+| Codex API Key | Codex ChatGPT Account |
+| --- | --- |
+| <img src="docs/codex_key_en.png" alt="Codex API Key settings" width="420"> | <img src="docs/codex_account_en.png" alt="Codex ChatGPT account settings" width="420"> |
 
-## 快速开始
+## Supported Files
 
-本项目没有构建步骤，直接启动静态文件服务即可。
+| Tool | File |
+| --- | --- |
+| Claude Code | `~/.claude/settings.json` |
+| Codex CLI config | `~/.codex/config.toml` |
+| Codex CLI auth | `~/.codex/auth.json` |
+| OpenCode | `~/.config/opencode/opencode.json` |
+
+## Quick Start
+
+Start a static file server from the repository root:
 
 ```bash
 python3 -m http.server 5173
 ```
 
-打开：
+Open:
 
 ```text
 http://localhost:5173/
 ```
 
-首次使用时，先在右侧绑定对应工具的配置文件。浏览器文件选择器中可以按 `Command + Shift + .` 显示隐藏目录。
+On first use, bind the configuration files for the tool you want to manage. On macOS, press `Command + Shift + .` in the file picker to show hidden directories.
 
-## Vercel 部署
+## Workflow
 
-本仓库已包含 `vercel.json`，Vercel 会把根路径 `/` 重写到 `index.html`。
+1. Choose a tool: Claude Code, Codex CLI, or OpenCode.
+2. Bind the local configuration files required by that tool.
+3. Import current settings or create a blank profile.
+4. Edit model, endpoint, authentication mode, and related settings.
+5. Apply the selected profile to write it back to local configuration files.
 
-部署步骤：
+## Security Boundary
 
-1. 将仓库推送到 GitHub。
-2. 在 Vercel 中导入该仓库。
-3. Framework Preset 选择 `Other` 或 `No Framework`。
-4. Build Command 留空。
-5. Output Directory 使用默认根目录。
-6. 部署完成后访问 Vercel 分配的 HTTPS 地址。
+- Agent Switchboard only accesses files you select.
+- File handles are stored in browser IndexedDB.
+- Profiles are stored in browser localStorage.
+- Exported JSON may include API keys or login cache data. Do not commit it to a public repository.
+- Static hosting only serves the page. It does not receive or store your local configuration files.
 
-也可以使用 Vercel CLI：
+## Deploy
+
+The repository includes `vercel.json`, which rewrites `/` to `index.html`.
 
 ```bash
 vercel
 vercel deploy --prod
 ```
 
-## 安全说明
+For Vercel dashboard deployment, import the repository, choose `Other` or `No Framework`, leave the build command empty, and keep the root directory as the output directory.
 
-- Agent Switchboard 只会访问你主动选择授权的本地文件。
-- 文件句柄保存在浏览器 IndexedDB 中，配置档案保存在 localStorage 中。
-- 导出的 JSON 可能包含 API Key 或登录缓存，不要提交到公开仓库。
-- 应用配置前会在 localStorage 中保存最近的文件快照，便于回看写入前状态。
-- 静态托管服务只负责托管页面，不会接收或保存你的本地配置文件内容。
-
-## 项目结构
+## Project Structure
 
 ```text
 .
-├── .gitignore
+├── docs/
+│   ├── guide_zh.png
+│   ├── guide_en.png
+│   ├── codex_key_zh.png
+│   ├── codex_key_en.png
+│   ├── codex_account_zh.png
+│   └── codex_account_en.png
 ├── LICENSE
 ├── README.md
+├── README.zh-CN.md
 ├── index.html
 └── vercel.json
 ```
 
-## 开发说明
+## Development Notes
 
-当前项目保持为单文件实现，便于直接托管和审计。后续如果引入构建链，需要确保 File System Access API、权限提示、配置写回逻辑仍然可以在 HTTPS 环境下正常工作。
+The project is intentionally kept as a single-file implementation for simple hosting and easier review. If a build pipeline is introduced later, make sure File System Access API permissions, permission prompts, and config write-back behavior still work under HTTPS or `localhost`.
 
-## 适合的仓库简介
+## Contributing
 
-```text
-Local-only profile switcher for Claude Code, Codex CLI, and OpenCode.
-```
+Issues and pull requests are welcome. Useful directions include:
 
-中文简介：
-
-```text
-一个本地优先的 AI 编程工具配置档案切换器，支持 Claude Code、Codex CLI 和 OpenCode。
-```
-
-## 贡献
-
-欢迎提交 Issue 或 Pull Request。比较适合的改进方向包括：
-
-- 新增更多 AI 编程工具的配置适配
-- 增加配置差异预览
-- 增加备份恢复界面
-- 改进移动端和窄屏布局
+- Add adapters for more AI coding tools
+- Add configuration diff preview
+- Add a backup restore interface
+- Improve mobile and narrow-screen layouts
 
 ## License
 
