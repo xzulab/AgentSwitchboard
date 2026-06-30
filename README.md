@@ -31,6 +31,10 @@ It runs as a static web page. There is no backend, no database, and no upload st
 - **Bilingual UI**: auto-detects Chinese or English, with manual switching in the sidebar.
 - **Static deploy**: works on `localhost` or any HTTPS static host.
 
+## Friendly Links
+
+- [linux.do](https://linux.do/)
+
 ## Screenshots
 
 | Codex API Key | Codex ChatGPT Account |
