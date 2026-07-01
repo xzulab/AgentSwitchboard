@@ -180,10 +180,17 @@
           0 1px 2px rgba(0, 0, 0, 0.06);
       }
       .toggle-switch input:checked + .slider {
-        background: theme('colors.brand');
+        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        box-shadow:
+          inset 0 1px 1px rgba(255, 255, 255, 0.18),
+          inset 0 -1px 2px rgba(4, 120, 87, 0.35),
+          0 0 0 3px rgba(5, 150, 105, 0.16);
       }
       .toggle-switch input:checked + .slider::before {
         transform: translateX(18px);
+        box-shadow:
+          0 1px 2px rgba(0, 0, 0, 0.18),
+          0 2px 8px rgba(4, 120, 87, 0.25);
       }
 
       /* 模态框动画系统 */
@@ -572,6 +579,73 @@
           'Privacy Mode': '隐私模式',
           'Disable telemetry and error reporting entirely.':
             '完全禁用遥测和错误上报。',
+          'Disable Telemetry': '禁用遥测',
+          'Disable telemetry and set DO_NOT_TRACK.':
+            '禁用遥测并设置 DO_NOT_TRACK。',
+          Default: '默认',
+          Latest: '最新',
+          Stable: '稳定',
+          'Interface & Runtime': '界面与运行',
+          Theme: '主题',
+          'Claude Code terminal theme.': 'Claude Code 终端主题。',
+          'Update Channel': '更新通道',
+          'Release channel used by Claude Code auto-updates.':
+            'Claude Code 自动更新使用的发布通道。',
+          'Auto Compact': '自动压缩',
+          'Compact long conversations near the context limit.':
+            '接近上下文上限时自动压缩长对话。',
+          'Auto Memory': '自动记忆',
+          'Allow Claude Code to save useful context to memory.':
+            '允许 Claude Code 将有用上下文保存到记忆。',
+          'Auto Scroll': '自动滚动',
+          'Follow new output in fullscreen rendering.':
+            '全屏渲染时跟随最新输出。',
+          'Auto-connect IDE': '自动连接 IDE',
+          'Connect to a running IDE from external terminals.':
+            '从外部终端启动时连接正在运行的 IDE。',
+          'Verbose Output': '详细输出',
+          'Show full tool output instead of summaries.':
+            '显示完整工具输出，而不是摘要。',
+          'Git Instructions': 'Git 内置指令',
+          'Include built-in commit and PR workflow guidance.':
+            '包含内置提交和 PR 流程指导。',
+          'Co-authored-by': '共同作者署名',
+          'Include Claude byline in commits and pull requests.':
+            '在提交和 PR 中包含 Claude 署名。',
+          'Disable Hooks': '禁用 Hooks',
+          'Disable hooks and status line command execution.':
+            '禁用 hooks 和状态栏命令执行。',
+          'Disable Codex Hooks': '禁用 Codex Hooks',
+          'Disable Codex lifecycle hooks.': '禁用 Codex 生命周期 hooks。',
+          'Session & Privacy': '会话与隐私',
+          'Cleanup Days': '清理天数',
+          'Retain local session files for this many days.':
+            '本地会话文件保留天数。',
+          'Survey Rate': '调查频率',
+          'Probability from 0 to 1 for session quality surveys.':
+            '会话质量调查出现概率，范围 0 到 1。',
+          'Error Reporting': '错误上报',
+          'Disable Sentry operational error logging.':
+            '禁用 Sentry 运行错误上报。',
+          'Nonessential Traffic': '非必要流量',
+          'Disable surveys and other nonessential Anthropic traffic.':
+            '禁用调查和其他非必要 Anthropic 流量。',
+          'Feedback Command': '反馈命令',
+          'Disable the /feedback command.': '禁用 /feedback 命令。',
+          'Feedback Survey': '反馈调查',
+          'Disable session quality survey prompts.':
+            '禁用会话质量调查提示。',
+          'Skip Prompt History': '跳过提示历史',
+          'Skip writing prompt history and transcripts to disk.':
+            '不将提示历史和会话转录写入磁盘。',
+          'Skip WebFetch Preflight': '跳过 WebFetch 预检',
+          'Skip hostname safety checks before WebFetch requests.':
+            'WebFetch 请求前跳过主机名安全检查。',
+          'Disable Auto Updater': '禁用自动更新器',
+          'Disable background auto-updates.': '禁用后台自动更新。',
+          'Disable All Updates': '禁用所有更新',
+          'Block all update paths including manual updates.':
+            '阻止包括手动更新在内的所有更新路径。',
           'Auth Mode': '认证模式',
           'Strategy used to connect to Codex.': 'Codex 连接策略。',
           'API Key (Standard)': 'API Key（标准）',
@@ -597,6 +671,95 @@
           'Display name for the provider.': '提供商显示名称。',
           'Custom API endpoint.': '自定义 API 端点。',
           'Provider Configuration': '提供商配置',
+          'Runtime & Policy': '运行与策略',
+          'Features & Privacy': '功能与隐私',
+          'Sandbox & Environment': '沙箱与环境',
+          'Approval Policy': '审批策略',
+          'When Codex pauses for command approval.':
+            'Codex 何时暂停并请求命令审批。',
+          'Sandbox Mode': '沙箱模式',
+          'Filesystem and network boundary for tool calls.':
+            '工具调用的文件系统和网络边界。',
+          'Web Search': '网页搜索',
+          'Use cached search, live search, or disable web search.':
+            '使用缓存搜索、实时搜索，或禁用网页搜索。',
+          'Reasoning Effort': '推理强度',
+          'Default reasoning effort for supported models.':
+            '支持模型的默认推理强度。',
+          'Reasoning Summary': '推理摘要',
+          'Controls model reasoning summaries when supported.':
+            '控制支持模型的推理摘要。',
+          Verbosity: '详细程度',
+          'Text verbosity for Responses API capable models.':
+            'Responses API 模型的文本详细程度。',
+          Personality: '沟通风格',
+          'Default communication style.': '默认沟通风格。',
+          'File Opener': '文件打开器',
+          'URI scheme for clickable file citations.':
+            '可点击文件引用使用的 URI 协议。',
+          'Log Directory': '日志目录',
+          'Explicit log directory; also enables plaintext TUI logs.':
+            '显式日志目录；也会启用明文 TUI 日志。',
+          'Credential Store': '凭据存储',
+          'Where CLI login credentials are persisted.':
+            'CLI 登录凭据的持久化位置。',
+          'MCP OAuth Store': 'MCP OAuth 存储',
+          'Where MCP OAuth credentials are persisted.':
+            'MCP OAuth 凭据的持久化位置。',
+          'Save History': '保存历史',
+          'Persist local prompt and transcript history.':
+            '持久化本地提示和会话历史。',
+          Analytics: '分析',
+          'Enable or disable local analytics setting.':
+            '启用或禁用本机分析设置。',
+          Feedback: '反馈',
+          'Allow the /feedback flow.': '允许 /feedback 流程。',
+          'Hide Reasoning': '隐藏推理',
+          'Suppress internal reasoning events from output.':
+            '在输出中隐藏内部推理事件。',
+          'Show Raw Reasoning': '显示原始推理',
+          'Show raw reasoning content when available.':
+            '可用时显示原始推理内容。',
+          'Check Updates': '检查更新',
+          'Check for Codex updates on startup.':
+            '启动时检查 Codex 更新。',
+          'Shell Snapshot': 'Shell 快照',
+          'Speed up repeated commands with shell snapshots.':
+            '使用 shell 快照加速重复命令。',
+          'Shell Tool': 'Shell 工具',
+          'Enable the default shell tool.': '启用默认 shell 工具。',
+          'Unified Exec': '统一执行',
+          'Use the unified PTY-backed exec tool.':
+            '使用 PTY 支持的统一执行工具。',
+          'Fast Mode': '快速模式',
+          'Enable Fast mode service tier selection.':
+            '启用快速模式服务层选择。',
+          'Multi Agent': '多代理',
+          'Enable subagent collaboration tools.':
+            '启用子代理协作工具。',
+          Memories: '记忆',
+          'Enable Codex memories.': '启用 Codex 记忆。',
+          Apps: '应用',
+          'Enable ChatGPT Apps/connectors support.':
+            '启用 ChatGPT Apps/connectors 支持。',
+          Undo: '撤销',
+          'Enable undo via per-turn git snapshots.':
+            '通过每轮 git 快照启用撤销。',
+          'Workspace Network': '工作区网络',
+          'Allow outbound network in workspace-write sandbox.':
+            '在 workspace-write 沙箱中允许出站网络。',
+          'Writable TMPDIR': 'TMPDIR 可写',
+          'Keep $TMPDIR writable in workspace-write sandbox.':
+            '在 workspace-write 沙箱中保持 $TMPDIR 可写。',
+          'Writable /tmp': '/tmp 可写',
+          'Keep /tmp writable in workspace-write sandbox.':
+            '在 workspace-write 沙箱中保持 /tmp 可写。',
+          'Shell Env Inherit': 'Shell 环境继承',
+          'Environment inherited by spawned commands.':
+            '传递给子进程命令的环境变量范围。',
+          'Ignore Secret Excludes': '忽略密钥排除',
+          'Skip default KEY/SECRET/TOKEN environment filtering.':
+            '跳过默认 KEY/SECRET/TOKEN 环境过滤。',
           Configuration: '配置',
           'Target LLM for OpenCode.': 'OpenCode 目标模型。',
           'Provider JSON': '提供商 JSON',
@@ -928,22 +1091,6 @@
         },
       }
 
-      const CLAUDE_TEXT_FIELDS = [
-        'apiKey',
-        'baseUrl',
-        'model',
-        'opusModel',
-        'sonnetModel',
-        'haikuModel',
-        'anthropicBetas',
-        'autoUpdatesChannel',
-      ]
-      const CLAUDE_BOOL_FIELDS = [
-        'experimentalAgentTeams',
-        'alwaysThinkingEnabled',
-        'skipDangerousModePermissionPrompt',
-      ]
-
       function deepCopy(v) {
         return v == null ? v : JSON.parse(JSON.stringify(v))
       }
@@ -960,6 +1107,116 @@
       function isConfiguredBool(v) {
         return v === true || v === false
       }
+      function envFlag(env, key) {
+        const value = env?.[key]
+        return (
+          value === '1' ||
+          value === true ||
+          String(value).toLowerCase() === 'true'
+        )
+      }
+      function setEnvFlag(env, key, enabled, value = '1') {
+        if (enabled === true) env[key] = value
+        if (enabled === false) delete env[key]
+      }
+      function numberSetting(value, opts = {}) {
+        if (value === '' || value == null) return null
+        const n = Number(value)
+        if (!Number.isFinite(n)) return null
+        if (opts.integer && !Number.isInteger(n)) return null
+        if (opts.min != null && n < opts.min) return null
+        if (opts.max != null && n > opts.max) return null
+        return n
+      }
+      function optionList(values) {
+        return [
+          { value: '', label: 'Default' },
+          ...values.map((v) =>
+            Array.isArray(v) ? { value: v[0], label: v[1] } : { value: v, label: v },
+          ),
+        ]
+      }
+
+      const SELECT_OPTIONS = {
+        claudeUpdateChannel: optionList([
+          ['latest', 'Latest'],
+          ['stable', 'Stable'],
+        ]),
+        codexApprovalPolicy: optionList(['on-request', 'untrusted', 'never']),
+        codexSandboxMode: optionList([
+          'read-only',
+          'workspace-write',
+          'danger-full-access',
+        ]),
+        codexWebSearch: optionList(['cached', 'live', 'disabled']),
+        reasoningEffort: optionList(['minimal', 'low', 'medium', 'high', 'xhigh']),
+        reasoningSummary: optionList(['auto', 'concise', 'detailed', 'none']),
+        verbosity: optionList(['low', 'medium', 'high']),
+        personality: optionList(['pragmatic', 'friendly', 'none']),
+        fileOpener: optionList([
+          'vscode',
+          'vscode-insiders',
+          'windsurf',
+          'cursor',
+          'none',
+        ]),
+        credentialStore: optionList(['file', 'keyring', 'auto']),
+        mcpOauthStore: optionList(['auto', 'file', 'keyring']),
+        historyPersistence: optionList(['save-all', 'none']),
+        shellEnvInherit: optionList(['all', 'core', 'none']),
+      }
+
+      const CODEX_ROOT_TEXT_SETTINGS = [
+        ['approval_policy', 'approvalPolicy'],
+        ['sandbox_mode', 'sandboxMode'],
+        ['web_search', 'webSearch'],
+        ['model_reasoning_effort', 'modelReasoningEffort'],
+        ['model_reasoning_summary', 'modelReasoningSummary'],
+        ['model_verbosity', 'modelVerbosity'],
+        ['personality', 'personality'],
+        ['file_opener', 'fileOpener'],
+        ['log_dir', 'logDir'],
+        ['cli_auth_credentials_store', 'cliAuthCredentialsStore'],
+        ['mcp_oauth_credentials_store', 'mcpOauthCredentialsStore'],
+      ]
+      const CODEX_ROOT_BOOL_SETTINGS = [
+        ['hide_agent_reasoning', 'hideAgentReasoning'],
+        ['show_raw_agent_reasoning', 'showRawAgentReasoning'],
+        ['check_for_update_on_startup', 'checkForUpdateOnStartup'],
+      ]
+      const CODEX_TABLE_TEXT_SETTINGS = [
+        ['history', 'persistence', 'historyPersistence'],
+        ['shell_environment_policy', 'inherit', 'shellEnvInherit'],
+      ]
+      const CODEX_TABLE_BOOL_SETTINGS = [
+        ['analytics', 'enabled', 'analyticsEnabled'],
+        ['feedback', 'enabled', 'feedbackEnabled'],
+        ['features', 'shell_snapshot', 'featureShellSnapshot'],
+        ['features', 'shell_tool', 'featureShellTool'],
+        ['features', 'unified_exec', 'featureUnifiedExec'],
+        ['features', 'fast_mode', 'featureFastMode'],
+        ['features', 'multi_agent', 'featureMultiAgent'],
+        ['features', 'memories', 'featureMemories'],
+        ['features', 'apps', 'featureApps'],
+        ['features', 'undo', 'featureUndo'],
+        ['features', 'hooks', 'featureHooks'],
+        ['sandbox_workspace_write', 'network_access', 'workspaceNetworkAccess'],
+        ['sandbox_workspace_write', 'exclude_tmpdir_env_var', 'writableTmpdir', true],
+        ['sandbox_workspace_write', 'exclude_slash_tmp', 'writableSlashTmp', true],
+        [
+          'shell_environment_policy',
+          'ignore_default_excludes',
+          'shellEnvIgnoreDefaultExcludes',
+        ],
+      ]
+      const CODEX_TABLE_ORDER = [
+        'history',
+        'analytics',
+        'feedback',
+        'sandbox_workspace_write',
+        'shell_environment_policy',
+        'features',
+      ]
 
       function emptyProfile(tool, desc = '') {
         const base = { description: desc }
@@ -973,11 +1230,30 @@
             sonnetModel: '',
             haikuModel: '',
             anthropicBetas: '',
+            theme: '',
+            autoUpdatesChannel: '',
+            cleanupPeriodDays: '',
+            feedbackSurveyRate: '',
             experimentalAgentTeams: null,
             alwaysThinkingEnabled: null,
-            autoUpdatesChannel: '',
+            autoCompactEnabled: null,
+            autoMemoryEnabled: null,
+            autoScrollEnabled: null,
+            autoConnectIde: null,
+            verbose: null,
+            includeGitInstructions: null,
+            includeCoAuthoredBy: null,
+            disableAllHooks: null,
             skipDangerousModePermissionPrompt: null,
             disableTelemetry: true,
+            disableErrorReporting: true,
+            disableNonessentialTraffic: true,
+            disableFeedbackCommand: false,
+            disableFeedbackSurvey: false,
+            skipPromptHistory: false,
+            skipWebFetchPreflight: null,
+            disableAutoUpdater: false,
+            disableUpdates: false,
           }
         if (tool === 'codex')
           return {
@@ -990,6 +1266,37 @@
             wireApi: 'responses',
             authMode: 'api',
             authJson: '',
+            approvalPolicy: '',
+            sandboxMode: '',
+            webSearch: '',
+            modelReasoningEffort: '',
+            modelReasoningSummary: '',
+            modelVerbosity: '',
+            personality: '',
+            fileOpener: '',
+            logDir: '',
+            cliAuthCredentialsStore: '',
+            mcpOauthCredentialsStore: '',
+            historyPersistence: '',
+            analyticsEnabled: null,
+            feedbackEnabled: null,
+            hideAgentReasoning: null,
+            showRawAgentReasoning: null,
+            checkForUpdateOnStartup: null,
+            featureShellSnapshot: null,
+            featureShellTool: null,
+            featureUnifiedExec: null,
+            featureFastMode: null,
+            featureMultiAgent: null,
+            featureMemories: null,
+            featureApps: null,
+            featureUndo: null,
+            featureHooks: null,
+            workspaceNetworkAccess: null,
+            writableTmpdir: null,
+            writableSlashTmp: null,
+            shellEnvInherit: '',
+            shellEnvIgnoreDefaultExcludes: null,
           }
         return { ...base, model: '', provider: {} }
       }
@@ -1037,6 +1344,7 @@
           'auth_mode',
           'forced_login_method',
           'wire_api',
+          'disableCodexHooks',
         ].forEach((k) => delete next[k])
         return next
       }
@@ -1263,6 +1571,42 @@
       function readTomlRootValue(t, k) {
         return readTomlValue(getTomlRootSection(t), k)
       }
+      function parseTomlBoolValue(v) {
+        const n = String(v || '')
+          .trim()
+          .toLowerCase()
+        if (n === 'true') return true
+        if (n === 'false') return false
+        return null
+      }
+      function readTomlBool(s, k) {
+        return parseTomlBoolValue(readTomlValue(s, k))
+      }
+      function readTomlRootBool(t, k) {
+        return readTomlBool(getTomlRootSection(t), k)
+      }
+      function readTomlTableValue(t, table, key) {
+        return readTomlValue(findTomlTableBody(t, table), key)
+      }
+      function readTomlTableBool(t, table, key) {
+        return readTomlBool(findTomlTableBody(t, table), key)
+      }
+      function isConfiguredText(v) {
+        return typeof v === 'string' && v.length > 0
+      }
+      function tomlScalar(v) {
+        if (typeof v === 'boolean') return v ? 'true' : 'false'
+        if (typeof v === 'number') return String(v)
+        return JSON.stringify(String(v))
+      }
+      function pushTomlValue(lines, key, value) {
+        if (value === '' || value == null) return
+        lines.push(`${key} = ${tomlScalar(value)}`)
+      }
+      function pushTomlBool(lines, key, value) {
+        if (!isConfiguredBool(value)) return
+        lines.push(`${key} = ${value ? 'true' : 'false'}`)
+      }
       function findTomlTableBody(t, n) {
         const l = String(t || '').split(/\r?\n/),
           b = []
@@ -1444,6 +1788,7 @@
             sonnetModel: e.ANTHROPIC_DEFAULT_SONNET_MODEL || '',
             haikuModel: e.ANTHROPIC_DEFAULT_HAIKU_MODEL || '',
             anthropicBetas: e.ANTHROPIC_BETAS || '',
+            theme: o.theme || '',
             experimentalAgentTeams: hasOwn(
               e,
               'CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS',
@@ -1453,18 +1798,66 @@
             alwaysThinkingEnabled: hasOwn(o, 'alwaysThinkingEnabled')
               ? !!o.alwaysThinkingEnabled
               : null,
+            autoCompactEnabled: hasOwn(o, 'autoCompactEnabled')
+              ? !!o.autoCompactEnabled
+              : null,
+            autoMemoryEnabled: hasOwn(o, 'autoMemoryEnabled')
+              ? !!o.autoMemoryEnabled
+              : null,
+            autoScrollEnabled: hasOwn(o, 'autoScrollEnabled')
+              ? !!o.autoScrollEnabled
+              : null,
+            autoConnectIde: hasOwn(o, 'autoConnectIde')
+              ? !!o.autoConnectIde
+              : null,
+            verbose: hasOwn(o, 'verbose') ? !!o.verbose : null,
+            includeGitInstructions: hasOwn(o, 'includeGitInstructions')
+              ? !!o.includeGitInstructions
+              : null,
+            includeCoAuthoredBy: hasOwn(o, 'includeCoAuthoredBy')
+              ? !!o.includeCoAuthoredBy
+              : null,
+            disableAllHooks: hasOwn(o, 'disableAllHooks')
+              ? !!o.disableAllHooks
+              : null,
             autoUpdatesChannel: o.autoUpdatesChannel || '',
+            cleanupPeriodDays: hasOwn(o, 'cleanupPeriodDays')
+              ? String(o.cleanupPeriodDays)
+              : '',
+            feedbackSurveyRate: hasOwn(o, 'feedbackSurveyRate')
+              ? String(o.feedbackSurveyRate)
+              : '',
             skipDangerousModePermissionPrompt: hasOwn(
               o,
               'skipDangerousModePermissionPrompt',
             )
               ? !!o.skipDangerousModePermissionPrompt
               : null,
-            disableTelemetry: e.DISABLE_TELEMETRY === '1',
+            disableTelemetry:
+              envFlag(e, 'DISABLE_TELEMETRY') || envFlag(e, 'DO_NOT_TRACK'),
+            disableErrorReporting: envFlag(e, 'DISABLE_ERROR_REPORTING'),
+            disableNonessentialTraffic: envFlag(
+              e,
+              'CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC',
+            ),
+            disableFeedbackCommand:
+              envFlag(e, 'DISABLE_FEEDBACK_COMMAND') ||
+              envFlag(e, 'DISABLE_BUG_COMMAND'),
+            disableFeedbackSurvey: envFlag(
+              e,
+              'CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY',
+            ),
+            skipPromptHistory: envFlag(e, 'CLAUDE_CODE_SKIP_PROMPT_HISTORY'),
+            skipWebFetchPreflight: hasOwn(o, 'skipWebFetchPreflight')
+              ? !!o.skipWebFetchPreflight
+              : null,
+            disableAutoUpdater: envFlag(e, 'DISABLE_AUTOUPDATER'),
+            disableUpdates: envFlag(e, 'DISABLE_UPDATES'),
           }
         },
         codexConfig(c) {
           const pk = readTomlRootValue(c, 'model_provider')
+          const mapped = {}
           let pn = '',
             bu = '',
             wa = ''
@@ -1476,12 +1869,23 @@
               wa = readTomlValue(bd, 'wire_api') || 'responses'
             }
           }
+          for (const [key, field] of CODEX_ROOT_TEXT_SETTINGS)
+            mapped[field] = readTomlRootValue(c, key)
+          for (const [key, field] of CODEX_ROOT_BOOL_SETTINGS)
+            mapped[field] = readTomlRootBool(c, key)
+          for (const [table, key, field] of CODEX_TABLE_TEXT_SETTINGS)
+            mapped[field] = readTomlTableValue(c, table, key)
+          for (const [table, key, field, invert] of CODEX_TABLE_BOOL_SETTINGS) {
+            const value = readTomlTableBool(c, table, key)
+            mapped[field] = value == null ? null : invert ? !value : value
+          }
           return {
             model: readTomlRootValue(c, 'model'),
             modelProvider: pk,
             providerName: pn,
             baseUrl: bu,
             wireApi: wa || 'responses',
+            ...mapped,
             apiKey: '',
           }
         },
@@ -1506,21 +1910,68 @@
             c.env.ANTHROPIC_DEFAULT_SONNET_MODEL = p.sonnetModel
           if (p.haikuModel) c.env.ANTHROPIC_DEFAULT_HAIKU_MODEL = p.haikuModel
           if (p.anthropicBetas) c.env.ANTHROPIC_BETAS = p.anthropicBetas
+          if (p.theme) c.theme = p.theme
+          else delete c.theme
           if (p.experimentalAgentTeams === true)
             c.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = '1'
           if (p.experimentalAgentTeams === false)
             delete c.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS
           if (isConfiguredBool(p.alwaysThinkingEnabled))
             c.alwaysThinkingEnabled = p.alwaysThinkingEnabled
-          if (p.autoUpdatesChannel) c.autoUpdatesChannel = p.autoUpdatesChannel
+          if (isConfiguredBool(p.autoCompactEnabled))
+            c.autoCompactEnabled = p.autoCompactEnabled
+          if (isConfiguredBool(p.autoMemoryEnabled))
+            c.autoMemoryEnabled = p.autoMemoryEnabled
+          if (isConfiguredBool(p.autoScrollEnabled))
+            c.autoScrollEnabled = p.autoScrollEnabled
+          if (isConfiguredBool(p.autoConnectIde))
+            c.autoConnectIde = p.autoConnectIde
+          if (isConfiguredBool(p.verbose)) c.verbose = p.verbose
+          if (isConfiguredBool(p.includeGitInstructions))
+            c.includeGitInstructions = p.includeGitInstructions
+          if (isConfiguredBool(p.includeCoAuthoredBy))
+            c.includeCoAuthoredBy = p.includeCoAuthoredBy
+          if (isConfiguredBool(p.disableAllHooks))
+            c.disableAllHooks = p.disableAllHooks
+          if (p.autoUpdatesChannel === '') delete c.autoUpdatesChannel
+          if (['stable', 'latest'].includes(p.autoUpdatesChannel))
+            c.autoUpdatesChannel = p.autoUpdatesChannel
+          const cleanupPeriodDays = numberSetting(p.cleanupPeriodDays, {
+            integer: true,
+            min: 1,
+          })
+          if (p.cleanupPeriodDays === '') delete c.cleanupPeriodDays
+          if (cleanupPeriodDays != null) c.cleanupPeriodDays = cleanupPeriodDays
+          const feedbackSurveyRate = numberSetting(p.feedbackSurveyRate, {
+            min: 0,
+            max: 1,
+          })
+          if (p.feedbackSurveyRate === '') delete c.feedbackSurveyRate
+          if (feedbackSurveyRate != null)
+            c.feedbackSurveyRate = feedbackSurveyRate
           if (isConfiguredBool(p.skipDangerousModePermissionPrompt))
             c.skipDangerousModePermissionPrompt =
               p.skipDangerousModePermissionPrompt
-          if (p.disableTelemetry !== false) {
-            c.env.DISABLE_TELEMETRY = '1'
-            c.env.DISABLE_ERROR_REPORTING = '1'
-            c.env.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC = '1'
-          }
+          if (isConfiguredBool(p.skipWebFetchPreflight))
+            c.skipWebFetchPreflight = p.skipWebFetchPreflight
+          setEnvFlag(c.env, 'DISABLE_TELEMETRY', p.disableTelemetry)
+          setEnvFlag(c.env, 'DO_NOT_TRACK', p.disableTelemetry)
+          setEnvFlag(c.env, 'DISABLE_ERROR_REPORTING', p.disableErrorReporting)
+          setEnvFlag(
+            c.env,
+            'CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC',
+            p.disableNonessentialTraffic,
+          )
+          setEnvFlag(c.env, 'DISABLE_FEEDBACK_COMMAND', p.disableFeedbackCommand)
+          if (p.disableFeedbackCommand === false) delete c.env.DISABLE_BUG_COMMAND
+          setEnvFlag(
+            c.env,
+            'CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY',
+            p.disableFeedbackSurvey,
+          )
+          setEnvFlag(c.env, 'CLAUDE_CODE_SKIP_PROMPT_HISTORY', p.skipPromptHistory)
+          setEnvFlag(c.env, 'DISABLE_AUTOUPDATER', p.disableAutoUpdater)
+          setEnvFlag(c.env, 'DISABLE_UPDATES', p.disableUpdates)
           return JSON.stringify(c, null, 2) + '\n'
         },
         codexAuth(e, p) {
@@ -1541,19 +1992,40 @@
             me = '# --- AISWITCH CODEX END ---',
             mrk = ['model_provider', 'auth_mode', 'forced_login_method']
           if (p.model) mrk.unshift('model')
+          for (const [key, field] of CODEX_ROOT_TEXT_SETTINGS)
+            if (isConfiguredText(p[field])) mrk.push(key)
+          for (const [key, field] of CODEX_ROOT_BOOL_SETTINGS)
+            if (isConfiguredBool(p[field])) mrk.push(key)
           t = stripManagedTomlBlock(t, ms, me)
           t = stripTopLevelTomlKeys(t, mrk)
+          const tableHasManagedSetting = (table) =>
+            CODEX_TABLE_TEXT_SETTINGS.some(
+              ([name, , field]) => name === table && isConfiguredText(p[field]),
+            ) ||
+            CODEX_TABLE_BOOL_SETTINGS.some(
+              ([name, , field]) => name === table && isConfiguredBool(p[field]),
+            )
+          for (const table of CODEX_TABLE_ORDER)
+            if (tableHasManagedSetting(table)) t = stripTomlTableTree(t, table)
           if (am === 'chatgpt') t = stripTomlTableTree(t, 'model_providers')
           else if (p.modelProvider)
             t = stripTomlTableTree(t, `model_providers.${p.modelProvider}`)
           const rb = []
-          if (p.model || up) rb.push(ms)
-          if (p.model) rb.push(`model = ${JSON.stringify(String(p.model))}`)
+          const rootLines = []
+          if (p.model) rootLines.push(`model = ${JSON.stringify(String(p.model))}`)
           if (up)
-            rb.push(
+            rootLines.push(
               `model_provider = ${JSON.stringify(String(p.modelProvider))}`,
             )
-          if (p.model || up) rb.push(me)
+          for (const [key, field] of CODEX_ROOT_TEXT_SETTINGS)
+            pushTomlValue(rootLines, key, p[field])
+          for (const [key, field] of CODEX_ROOT_BOOL_SETTINGS)
+            pushTomlBool(rootLines, key, p[field])
+          if (rootLines.length) {
+            rb.push(ms)
+            rb.push(...rootLines)
+            rb.push(me)
+          }
           const tb = []
           if (up) {
             tb.push(ms)
@@ -1566,6 +2038,22 @@
               `wire_api = ${JSON.stringify(String(p.wireApi || 'responses'))}`,
             )
             tb.push(me)
+          }
+          const addTable = (name, lines) => {
+            if (!lines.length) return
+            tb.push(ms)
+            tb.push(`[${name}]`)
+            tb.push(...lines)
+            tb.push(me)
+          }
+          for (const table of CODEX_TABLE_ORDER) {
+            const lines = []
+            for (const [name, key, field] of CODEX_TABLE_TEXT_SETTINGS)
+              if (name === table) pushTomlValue(lines, key, p[field])
+            for (const [name, key, field, invert] of CODEX_TABLE_BOOL_SETTINGS)
+              if (name === table && isConfiguredBool(p[field]))
+                pushTomlBool(lines, key, invert ? !p[field] : p[field])
+            addTable(table, lines)
           }
           const b = splitTomlRootAndTables(t),
             nx = [
@@ -2160,6 +2648,20 @@
               <label class="toggle-switch shrink-0"><input type="checkbox" ${isChecked ? 'checked' : ''} data-p="${esc(pn)}" data-t="${t}" data-f="${f}" onchange="App.ut(this)"><span class="slider"></span></label>
             </div>`
         },
+        renderSelectRow(label, desc, value, pn, f, t, options, isLast = false) {
+          const optionHtml = options
+            .map(
+              (option) =>
+                `<option value="${esc(option.value)}" ${value === option.value ? 'selected' : ''}>${option.label}</option>`,
+            )
+            .join('')
+          return this.renderInputRow(
+            label,
+            desc,
+            `<select class="w-full bg-surface2 border border-border hover:border-borderHover rounded-xl px-4 py-2 text-sm font-semibold text-textMain focus:bg-surface focus:outline-none focus:ring-2 focus:ring-brand/20 transition-all shadow-input cursor-pointer" data-p="${esc(pn)}" data-t="${t}" data-f="${f}" onchange="App.uf(this)">${optionHtml}</select>`,
+            isLast,
+          )
+        },
 
         renderFormContent(tool, data, pn) {
           const rawInputCls =
@@ -2207,7 +2709,61 @@
                 true,
               )
 
-            const toggles =
+            const interfaceGroup =
+              this.renderInputRow(
+                'Theme',
+                'Claude Code terminal theme.',
+                `<input type="text" value="${esc(data?.theme || '')}" placeholder="auto / dark / light / custom:slug" class="${rawInputCls}" data-p="${esc(pn)}" data-t="claude" data-f="theme" onchange="App.uf(this)">`,
+              ) +
+              this.renderSelectRow(
+                'Update Channel',
+                'Release channel used by Claude Code auto-updates.',
+                data?.autoUpdatesChannel || '',
+                pn,
+                'autoUpdatesChannel',
+                'claude',
+                SELECT_OPTIONS.claudeUpdateChannel,
+              ) +
+              this.renderToggleRow(
+                'Auto Compact',
+                'Compact long conversations near the context limit.',
+                data?.autoCompactEnabled,
+                pn,
+                'autoCompactEnabled',
+                'claude',
+              ) +
+              this.renderToggleRow(
+                'Auto Memory',
+                'Allow Claude Code to save useful context to memory.',
+                data?.autoMemoryEnabled,
+                pn,
+                'autoMemoryEnabled',
+                'claude',
+              ) +
+              this.renderToggleRow(
+                'Auto Scroll',
+                'Follow new output in fullscreen rendering.',
+                data?.autoScrollEnabled,
+                pn,
+                'autoScrollEnabled',
+                'claude',
+              ) +
+              this.renderToggleRow(
+                'Auto-connect IDE',
+                'Connect to a running IDE from external terminals.',
+                data?.autoConnectIde,
+                pn,
+                'autoConnectIde',
+                'claude',
+              ) +
+              this.renderToggleRow(
+                'Verbose Output',
+                'Show full tool output instead of summaries.',
+                data?.verbose,
+                pn,
+                'verbose',
+                'claude',
+              ) +
               this.renderToggleRow(
                 'Agent Teams',
                 'Enable experimental agent teams coordination.',
@@ -2225,6 +2781,22 @@
                 'claude',
               ) +
               this.renderToggleRow(
+                'Git Instructions',
+                'Include built-in commit and PR workflow guidance.',
+                data?.includeGitInstructions,
+                pn,
+                'includeGitInstructions',
+                'claude',
+              ) +
+              this.renderToggleRow(
+                'Co-authored-by',
+                'Include Claude byline in commits and pull requests.',
+                data?.includeCoAuthoredBy,
+                pn,
+                'includeCoAuthoredBy',
+                'claude',
+              ) +
+              this.renderToggleRow(
                 'Skip Confirm',
                 'Skip prompts for dangerous commands.',
                 data?.skipDangerousModePermissionPrompt,
@@ -2233,11 +2805,96 @@
                 'claude',
               ) +
               this.renderToggleRow(
-                'Privacy Mode',
-                'Disable telemetry and error reporting entirely.',
-                data?.disableTelemetry !== false,
+                'Disable Hooks',
+                'Disable hooks and status line command execution.',
+                data?.disableAllHooks,
+                pn,
+                'disableAllHooks',
+                'claude',
+              ) +
+              this.renderToggleRow(
+                'Disable Auto Updater',
+                'Disable background auto-updates.',
+                data?.disableAutoUpdater,
+                pn,
+                'disableAutoUpdater',
+                'claude',
+              ) +
+              this.renderToggleRow(
+                'Disable All Updates',
+                'Block all update paths including manual updates.',
+                data?.disableUpdates,
+                pn,
+                'disableUpdates',
+                'claude',
+                true,
+              )
+
+            const privacyGroup =
+              this.renderInputRow(
+                'Cleanup Days',
+                'Retain local session files for this many days.',
+                `<input type="number" min="1" step="1" value="${esc(data?.cleanupPeriodDays || '')}" placeholder="30" class="${rawInputCls}" data-p="${esc(pn)}" data-t="claude" data-f="cleanupPeriodDays" onchange="App.uf(this)">`,
+              ) +
+              this.renderInputRow(
+                'Survey Rate',
+                'Probability from 0 to 1 for session quality surveys.',
+                `<input type="number" min="0" max="1" step="0.01" value="${esc(data?.feedbackSurveyRate || '')}" placeholder="0" class="${rawInputCls}" data-p="${esc(pn)}" data-t="claude" data-f="feedbackSurveyRate" onchange="App.uf(this)">`,
+              ) +
+              this.renderToggleRow(
+                'Disable Telemetry',
+                'Disable telemetry and set DO_NOT_TRACK.',
+                data?.disableTelemetry,
                 pn,
                 'disableTelemetry',
+                'claude',
+              ) +
+              this.renderToggleRow(
+                'Error Reporting',
+                'Disable Sentry operational error logging.',
+                data?.disableErrorReporting,
+                pn,
+                'disableErrorReporting',
+                'claude',
+              ) +
+              this.renderToggleRow(
+                'Nonessential Traffic',
+                'Disable surveys and other nonessential Anthropic traffic.',
+                data?.disableNonessentialTraffic,
+                pn,
+                'disableNonessentialTraffic',
+                'claude',
+              ) +
+              this.renderToggleRow(
+                'Feedback Command',
+                'Disable the /feedback command.',
+                data?.disableFeedbackCommand,
+                pn,
+                'disableFeedbackCommand',
+                'claude',
+              ) +
+              this.renderToggleRow(
+                'Feedback Survey',
+                'Disable session quality survey prompts.',
+                data?.disableFeedbackSurvey,
+                pn,
+                'disableFeedbackSurvey',
+                'claude',
+              ) +
+              this.renderToggleRow(
+                'Skip Prompt History',
+                'Skip writing prompt history and transcripts to disk.',
+                data?.skipPromptHistory,
+                pn,
+                'skipPromptHistory',
+                'claude',
+              ) +
+              this.renderToggleRow(
+                'Skip WebFetch Preflight',
+                'Skip hostname safety checks before WebFetch requests.',
+                data?.skipWebFetchPreflight,
+                pn,
+                'skipWebFetchPreflight',
                 'claude',
                 true,
               )
@@ -2245,7 +2902,8 @@
             return (
               this.renderFormGroup('Authentication', apiGroup) +
               this.renderFormGroup('Model Overrides', modelGroup) +
-              this.renderFormGroup('Features & Privacy', toggles)
+              this.renderFormGroup('Interface & Runtime', interfaceGroup) +
+              this.renderFormGroup('Session & Privacy', privacyGroup)
             )
           } else if (tool === 'codex') {
             const isChat = normalizeCodexAuthMode(data?.authMode) === 'chatgpt'
@@ -2348,8 +3006,278 @@
               providerGroup = this.renderFormGroup('Provider Configuration', p)
             }
 
+            const runtimeGroup =
+              this.renderSelectRow(
+                'Approval Policy',
+                'When Codex pauses for command approval.',
+                data?.approvalPolicy || '',
+                pn,
+                'approvalPolicy',
+                'codex',
+                SELECT_OPTIONS.codexApprovalPolicy,
+              ) +
+              this.renderSelectRow(
+                'Sandbox Mode',
+                'Filesystem and network boundary for tool calls.',
+                data?.sandboxMode || '',
+                pn,
+                'sandboxMode',
+                'codex',
+                SELECT_OPTIONS.codexSandboxMode,
+              ) +
+              this.renderSelectRow(
+                'Web Search',
+                'Use cached search, live search, or disable web search.',
+                data?.webSearch || '',
+                pn,
+                'webSearch',
+                'codex',
+                SELECT_OPTIONS.codexWebSearch,
+              ) +
+              this.renderSelectRow(
+                'Reasoning Effort',
+                'Default reasoning effort for supported models.',
+                data?.modelReasoningEffort || '',
+                pn,
+                'modelReasoningEffort',
+                'codex',
+                SELECT_OPTIONS.reasoningEffort,
+              ) +
+              this.renderSelectRow(
+                'Reasoning Summary',
+                'Controls model reasoning summaries when supported.',
+                data?.modelReasoningSummary || '',
+                pn,
+                'modelReasoningSummary',
+                'codex',
+                SELECT_OPTIONS.reasoningSummary,
+              ) +
+              this.renderSelectRow(
+                'Verbosity',
+                'Text verbosity for Responses API capable models.',
+                data?.modelVerbosity || '',
+                pn,
+                'modelVerbosity',
+                'codex',
+                SELECT_OPTIONS.verbosity,
+              ) +
+              this.renderSelectRow(
+                'Personality',
+                'Default communication style.',
+                data?.personality || '',
+                pn,
+                'personality',
+                'codex',
+                SELECT_OPTIONS.personality,
+              ) +
+              this.renderSelectRow(
+                'File Opener',
+                'URI scheme for clickable file citations.',
+                data?.fileOpener || '',
+                pn,
+                'fileOpener',
+                'codex',
+                SELECT_OPTIONS.fileOpener,
+              ) +
+              this.renderInputRow(
+                'Log Directory',
+                'Explicit log directory; also enables plaintext TUI logs.',
+                `<input type="text" value="${esc(data?.logDir || '')}" placeholder="/absolute/path/to/codex-logs" class="${rawInputCls}" data-p="${esc(pn)}" data-t="codex" data-f="logDir" onchange="App.uf(this)">`,
+                true,
+              )
+
+            const privacyGroup =
+              this.renderSelectRow(
+                'Credential Store',
+                'Where CLI login credentials are persisted.',
+                data?.cliAuthCredentialsStore || '',
+                pn,
+                'cliAuthCredentialsStore',
+                'codex',
+                SELECT_OPTIONS.credentialStore,
+              ) +
+              this.renderSelectRow(
+                'MCP OAuth Store',
+                'Where MCP OAuth credentials are persisted.',
+                data?.mcpOauthCredentialsStore || '',
+                pn,
+                'mcpOauthCredentialsStore',
+                'codex',
+                SELECT_OPTIONS.mcpOauthStore,
+              ) +
+              this.renderSelectRow(
+                'Save History',
+                'Persist local prompt and transcript history.',
+                data?.historyPersistence || '',
+                pn,
+                'historyPersistence',
+                'codex',
+                SELECT_OPTIONS.historyPersistence,
+              ) +
+              this.renderToggleRow(
+                'Analytics',
+                'Enable or disable local analytics setting.',
+                data?.analyticsEnabled,
+                pn,
+                'analyticsEnabled',
+                'codex',
+              ) +
+              this.renderToggleRow(
+                'Feedback',
+                'Allow the /feedback flow.',
+                data?.feedbackEnabled,
+                pn,
+                'feedbackEnabled',
+                'codex',
+              ) +
+              this.renderToggleRow(
+                'Hide Reasoning',
+                'Suppress internal reasoning events from output.',
+                data?.hideAgentReasoning,
+                pn,
+                'hideAgentReasoning',
+                'codex',
+              ) +
+              this.renderToggleRow(
+                'Show Raw Reasoning',
+                'Show raw reasoning content when available.',
+                data?.showRawAgentReasoning,
+                pn,
+                'showRawAgentReasoning',
+                'codex',
+              ) +
+              this.renderToggleRow(
+                'Check Updates',
+                'Check for Codex updates on startup.',
+                data?.checkForUpdateOnStartup,
+                pn,
+                'checkForUpdateOnStartup',
+                'codex',
+              ) +
+              this.renderToggleRow(
+                'Shell Snapshot',
+                'Speed up repeated commands with shell snapshots.',
+                data?.featureShellSnapshot,
+                pn,
+                'featureShellSnapshot',
+                'codex',
+              ) +
+              this.renderToggleRow(
+                'Shell Tool',
+                'Enable the default shell tool.',
+                data?.featureShellTool,
+                pn,
+                'featureShellTool',
+                'codex',
+              ) +
+              this.renderToggleRow(
+                'Unified Exec',
+                'Use the unified PTY-backed exec tool.',
+                data?.featureUnifiedExec,
+                pn,
+                'featureUnifiedExec',
+                'codex',
+              ) +
+              this.renderToggleRow(
+                'Fast Mode',
+                'Enable Fast mode service tier selection.',
+                data?.featureFastMode,
+                pn,
+                'featureFastMode',
+                'codex',
+              ) +
+              this.renderToggleRow(
+                'Multi Agent',
+                'Enable subagent collaboration tools.',
+                data?.featureMultiAgent,
+                pn,
+                'featureMultiAgent',
+                'codex',
+              ) +
+              this.renderToggleRow(
+                'Memories',
+                'Enable Codex memories.',
+                data?.featureMemories,
+                pn,
+                'featureMemories',
+                'codex',
+              ) +
+              this.renderToggleRow(
+                'Apps',
+                'Enable ChatGPT Apps/connectors support.',
+                data?.featureApps,
+                pn,
+                'featureApps',
+                'codex',
+              ) +
+              this.renderToggleRow(
+                'Undo',
+                'Enable undo via per-turn git snapshots.',
+                data?.featureUndo,
+                pn,
+                'featureUndo',
+                'codex',
+              ) +
+              this.renderToggleRow(
+                'Disable Codex Hooks',
+                'Disable Codex lifecycle hooks.',
+                data?.featureHooks === false,
+                pn,
+                'disableCodexHooks',
+                'codex',
+                true,
+              )
+
+            const sandboxGroup =
+              this.renderToggleRow(
+                'Workspace Network',
+                'Allow outbound network in workspace-write sandbox.',
+                data?.workspaceNetworkAccess,
+                pn,
+                'workspaceNetworkAccess',
+                'codex',
+              ) +
+              this.renderToggleRow(
+                'Writable TMPDIR',
+                'Keep $TMPDIR writable in workspace-write sandbox.',
+                data?.writableTmpdir,
+                pn,
+                'writableTmpdir',
+                'codex',
+              ) +
+              this.renderToggleRow(
+                'Writable /tmp',
+                'Keep /tmp writable in workspace-write sandbox.',
+                data?.writableSlashTmp,
+                pn,
+                'writableSlashTmp',
+                'codex',
+              ) +
+              this.renderSelectRow(
+                'Shell Env Inherit',
+                'Environment inherited by spawned commands.',
+                data?.shellEnvInherit || '',
+                pn,
+                'shellEnvInherit',
+                'codex',
+                SELECT_OPTIONS.shellEnvInherit,
+              ) +
+              this.renderToggleRow(
+                'Ignore Secret Excludes',
+                'Skip default KEY/SECRET/TOKEN environment filtering.',
+                data?.shellEnvIgnoreDefaultExcludes,
+                pn,
+                'shellEnvIgnoreDefaultExcludes',
+                'codex',
+                true,
+              )
+
             return (
-              this.renderFormGroup('Authentication', authGroup) + providerGroup
+              this.renderFormGroup('Authentication', authGroup) +
+              providerGroup +
+              this.renderFormGroup('Runtime & Policy', runtimeGroup) +
+              this.renderFormGroup('Features & Privacy', privacyGroup) +
+              this.renderFormGroup('Sandbox & Environment', sandboxGroup)
             )
           } else {
             const pj = data?.provider
@@ -2391,7 +3319,9 @@
           const { p, t, f } = el.dataset
           const profile = Store.getProfile(t, p)
           if (!profile) return
-          profile[f] = el.checked
+          if (t === 'codex' && f === 'disableCodexHooks')
+            profile.featureHooks = !el.checked
+          else profile[f] = el.checked
           Store.saveProfile(t, p, profile)
           this.renderSidebar()
           I18n.applyAll()
