@@ -550,6 +550,8 @@
           'Start fresh with empty configuration.': '从空配置开始。',
           'Sync from local files': '从本地文件同步',
           Sync: '同步',
+          'Copy Profile': '复制档案',
+          'Profile copied': '档案已复制',
           Rename: '重命名',
           Delete: '删除',
           'Apply Settings': '应用设置',
@@ -1379,6 +1381,16 @@
         }
         return candidate
       }
+      function uniqueCopyName(existing, baseName) {
+        const copyBase = `${baseName} Copy`
+        let candidate = copyBase,
+          index = 1
+        while (existing[candidate]) {
+          index++
+          candidate = `${copyBase} ${index}`
+        }
+        return candidate
+      }
 
       const Store = {
         KEY: 'aiswitch_data_v3',
@@ -1481,6 +1493,17 @@
           if (bucket.selectedProfile === oldName)
             bucket.selectedProfile = newName
           this.save(data)
+        },
+        duplicateProfile(tool, name) {
+          const data = this.load()
+          const bucket = data.tools[tool]
+          const profile = bucket.profiles[name]
+          if (!profile) return ''
+          const newName = uniqueCopyName(bucket.profiles, name)
+          bucket.profiles[newName] = normalizeProfile(tool, deepCopy(profile))
+          bucket.selectedProfile = newName
+          this.save(data)
+          return newName
         },
         getActive(tool) {
           return this.load().tools[tool]?.activeProfile || ''
@@ -2298,11 +2321,16 @@
             .map(
               ([name, profile]) => `
             <div class="group relative px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-200 flex items-center justify-between ${selected === name ? 'bg-brandMuted text-brand' : 'bg-transparent hover:bg-surface2'} active:scale-[0.98]" onclick="App.selectProfile(${jsArg(name)})">
-              <div class="min-w-0 flex-1 pr-2">
+              <div class="min-w-0 flex-1 pr-3">
                 <div class="font-bold text-[13px] tracking-tight truncate ${selected === name ? 'text-brandHover' : 'text-textMain'}">${esc(name)}</div>
                 <div class="text-[11px] truncate mt-0.5 ${selected === name ? 'text-brand/70' : 'text-textMuted'}">${esc(profile.description || 'No description')}</div>
               </div>
-              ${active === name ? '<div class="shrink-0 px-2 py-0.5 rounded border text-[9px] font-bold uppercase tracking-wider bg-surface border-brand/20 text-brand">Active</div>' : ''}
+              <div class="shrink-0 flex items-center justify-end gap-1.5">
+                ${active === name ? '<div class="shrink-0 px-2 py-0.5 rounded border text-[9px] font-bold uppercase tracking-wider bg-surface border-brand/20 text-brand">Active</div>' : ''}
+                <button type="button" class="shrink-0 p-1 rounded-md border border-transparent text-textMuted opacity-0 transition-all group-hover:opacity-100 group-focus-within:opacity-100 focus:opacity-100 hover:text-textMain hover:bg-surface hover:border-border active:scale-90" onclick="event.stopPropagation(); App.duplicateProfile(${jsArg(name)})" title="Copy Profile" aria-label="Copy Profile">
+                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 8h10a2 2 0 012 2v8a2 2 0 01-2 2H8a2 2 0 01-2-2v-8a2 2 0 012-2z"/><path stroke-linecap="round" stroke-linejoin="round" d="M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2"/></svg>
+                </button>
+              </div>
             </div>
           `,
             )
@@ -2319,6 +2347,14 @@
           if (!Store.getProfile(tool, name)) return
           Store.setSelected(tool, name)
           this.render()
+        },
+        duplicateProfile(name) {
+          const tool = Store.getSelectedTool()
+          if (!this.canManageTool(tool)) return
+          const newName = Store.duplicateProfile(tool, name)
+          if (!newName) return
+          this.render()
+          toast('Profile copied')
         },
         canManageTool(tool, showToast = true) {
           if (toolManagementReady(tool)) return true
