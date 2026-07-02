@@ -652,11 +652,15 @@
           'Strategy used to connect to Codex.': 'Codex 连接策略。',
           'API Key (Standard)': 'API Key（标准）',
           'ChatGPT Session (Web Token)': 'ChatGPT 会话（网页令牌）',
+          'Token (Personal Access Token)': '令牌模式（个人访问令牌）',
           'Standard OpenAI/Custom API Key.': '标准 OpenAI 或自定义 API Key。',
+          'Codex personal access token.': 'Codex 个人访问令牌。',
           Status: '状态',
           'Current token validation status.': '当前令牌校验状态。',
           'Valid Session': '会话有效',
+          'Valid Token': '令牌有效',
           'Session Tokens': '会话令牌',
+          'Personal Access Token': '个人访问令牌',
           'Identity payload': '身份载荷',
           'Session access': '会话访问令牌',
           'Session renewal': '会话刷新令牌',
@@ -1100,11 +1104,17 @@
         return Object.prototype.hasOwnProperty.call(obj || {}, key)
       }
       function normalizeCodexAuthMode(value) {
-        return String(value || '')
+        const mode = String(value || '')
           .trim()
-          .toLowerCase() === 'chatgpt'
-          ? 'chatgpt'
-          : 'api'
+          .toLowerCase()
+        if (mode === 'chatgpt') return 'chatgpt'
+        if (
+          mode === 'token' ||
+          mode === 'pat' ||
+          mode === 'personal_access_token'
+        )
+          return 'token'
+        return 'api'
       }
       function isConfiguredBool(v) {
         return v === true || v === false
@@ -1261,6 +1271,7 @@
           return {
             ...base,
             apiKey: '',
+            personalAccessToken: '',
             model: '',
             modelProvider: '',
             providerName: '',
@@ -1315,17 +1326,28 @@
           if (!['responses', 'chat'].includes(next.wireApi))
             next.wireApi = 'responses'
           next.authJson = typeof next.authJson === 'string' ? next.authJson : ''
+          next.personalAccessToken =
+            typeof next.personalAccessToken === 'string'
+              ? next.personalAccessToken
+              : ''
           const explicitAuthMode = profile.authMode || profile.auth_mode || ''
+          let parsedAuth = null
           if (!explicitAuthMode && next.authJson) {
             try {
-              const parsedAuth = parseCodexAuthJson(next.authJson)
+              parsedAuth = parseCodexAuthJson(next.authJson)
               next.authMode = parsedAuth.authMode
-              if (!next.apiKey && parsedAuth.apiKey)
-                next.apiKey = parsedAuth.apiKey
             } catch {
               next.authMode = 'api'
             }
           }
+          if (!parsedAuth && next.authJson) {
+            try {
+              parsedAuth = parseCodexAuthJson(next.authJson)
+            } catch {}
+          }
+          if (!next.apiKey && parsedAuth?.apiKey) next.apiKey = parsedAuth.apiKey
+          if (!next.personalAccessToken && parsedAuth?.personalAccessToken)
+            next.personalAccessToken = parsedAuth.personalAccessToken
           next.authMode = normalizeCodexAuthMode(
             explicitAuthMode || next.authMode,
           )
@@ -1652,15 +1674,23 @@
       function parseCodexAuthJson(c) {
         const d = parseJsonObject(c),
           t = d?.tokens || {},
-          am = normalizeCodexAuthMode(d.auth_mode || '')
+          hasSessionTokens = !!(t.access_token || t.refresh_token || t.id_token),
+          am = d.auth_mode
+            ? normalizeCodexAuthMode(d.auth_mode)
+            : d.personal_access_token
+              ? 'token'
+              : hasSessionTokens
+                ? 'chatgpt'
+                : 'api'
         const req = ['id_token', 'access_token', 'refresh_token', 'account_id'],
           mis = req.filter((k) => !t[k])
         if (!d.last_refresh) mis.push('last_refresh')
         return {
           authMode: am,
           apiKey: d.OPENAI_API_KEY || d.openai_api_key || '',
+          personalAccessToken: d.personal_access_token || '',
           authJson: JSON.stringify(d, null, 2) + '\n',
-          hasTokens: !!(t.access_token || t.refresh_token || t.id_token),
+          hasTokens: hasSessionTokens,
           hasCompleteChatGptAuth: mis.length === 0,
           missingTokenKeys: mis,
           accountId: t.account_id || '',
@@ -1690,6 +1720,7 @@
       function writeCodexAuthField(authJson, field, value) {
         const data = readCodexAuthData(authJson)
         data.auth_mode = 'chatgpt'
+        delete data.personal_access_token
         data.tokens =
           data.tokens &&
           typeof data.tokens === 'object' &&
@@ -1699,6 +1730,12 @@
         if (field === 'last_refresh') data.last_refresh = value
         else data.tokens[field] = value
         return JSON.stringify(data, null, 2) + '\n'
+      }
+      function validateCodexPersonalAccessToken(token) {
+        return {
+          ok: !!String(token || '').trim(),
+          missing: String(token || '').trim() ? [] : ['personal_access_token'],
+        }
       }
       function validateCodexChatGptAuth(a) {
         if (!a)
@@ -1998,19 +2035,37 @@
           return JSON.stringify(c, null, 2) + '\n'
         },
         codexAuth(e, p) {
-          const am = normalizeCodexAuthMode(p.authMode),
-            c = p.authJson
-              ? parseJsonObject(p.authJson)
-              : parseJsonObject(e || '{}')
-          if (am === 'chatgpt') c.auth_mode = 'chatgpt'
-          else delete c.auth_mode
+          const am = normalizeCodexAuthMode(p.authMode)
+          if (am === 'token') {
+            let token = p.personalAccessToken || ''
+            if (!token) {
+              try {
+                token = parseJsonObject(p.authJson || e || '{}')
+                  .personal_access_token || ''
+              } catch {}
+            }
+            return (
+              JSON.stringify({ personal_access_token: token }, null, 2) + '\n'
+            )
+          }
+          const c = p.authJson
+            ? parseJsonObject(p.authJson)
+            : parseJsonObject(e || '{}')
+          if (am === 'chatgpt') {
+            c.auth_mode = 'chatgpt'
+            delete c.personal_access_token
+          } else {
+            delete c.auth_mode
+            delete c.personal_access_token
+          }
           if (p.apiKey && am !== 'chatgpt') c.OPENAI_API_KEY = p.apiKey
           return JSON.stringify(c, null, 2) + '\n'
         },
         codexConfig(e, p) {
           let t = e || ''
           const am = normalizeCodexAuthMode(p.authMode),
-            up = am === 'api' && !!p.modelProvider,
+            usesProvider = am === 'api',
+            up = usesProvider && !!p.modelProvider,
             ms = '# --- AISWITCH CODEX START ---',
             me = '# --- AISWITCH CODEX END ---',
             mrk = ['model_provider', 'auth_mode', 'forced_login_method']
@@ -2030,7 +2085,7 @@
             )
           for (const table of CODEX_TABLE_ORDER)
             if (tableHasManagedSetting(table)) t = stripTomlTableTree(t, table)
-          if (am === 'chatgpt') t = stripTomlTableTree(t, 'model_providers')
+          if (!usesProvider) t = stripTomlTableTree(t, 'model_providers')
           else if (p.modelProvider)
             t = stripTomlTableTree(t, `model_providers.${p.modelProvider}`)
           const rb = []
@@ -2942,31 +2997,54 @@
               this.renderFormGroup('Session & Privacy', privacyGroup)
             )
           } else if (tool === 'codex') {
-            const isChat = normalizeCodexAuthMode(data?.authMode) === 'chatgpt'
+            const authMode = normalizeCodexAuthMode(data?.authMode)
+            const isApi = authMode === 'api'
+            const isChat = authMode === 'chatgpt'
+            const isToken = authMode === 'token'
             const authValidation = isChat
               ? validateCodexChatGptAuth(data?.authJson)
+              : null
+            const tokenValidation = isToken
+              ? validateCodexPersonalAccessToken(data?.personalAccessToken)
               : null
 
             const modeSelect = `
               <select class="w-full bg-surface2 border border-border hover:border-borderHover rounded-xl px-4 py-2 text-sm font-semibold text-textMain focus:bg-surface focus:outline-none focus:ring-2 focus:ring-brand/20 transition-all shadow-input cursor-pointer" data-p="${esc(pn)}" data-t="codex" data-f="authMode" onchange="App.uf(this)">
-                <option value="api" ${!isChat ? 'selected' : ''}>API Key (Standard)</option>
+                <option value="api" ${isApi ? 'selected' : ''}>API Key (Standard)</option>
                 <option value="chatgpt" ${isChat ? 'selected' : ''}>ChatGPT Session (Web Token)</option>
+                <option value="token" ${isToken ? 'selected' : ''}>Token (Personal Access Token)</option>
               </select>`
 
             let authGroup = this.renderInputRow(
               'Auth Mode',
               'Strategy used to connect to Codex.',
               modeSelect,
-              !isChat,
+              false,
             )
 
-            if (!isChat) {
+            if (isApi) {
               authGroup += this.renderInputRow(
                 'API Key',
                 'Standard OpenAI/Custom API Key.',
                 `<input type="password" value="${esc(data?.apiKey || '')}" class="${rawInputCls} pr-8" data-p="${esc(pn)}" data-t="codex" data-f="apiKey" onchange="App.uf(this)"><button class="absolute right-2 p-1 text-textMuted hover:text-textMain transition-colors" onclick="togglePw(this)"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg></button>`,
                 true,
               )
+            } else if (isToken) {
+              const status = tokenValidation?.ok
+                ? '<span class="px-2 py-1 bg-brandLight text-brand rounded text-xs font-bold">Valid Token</span>'
+                : `<span class="px-2 py-1 bg-dangerLight text-danger rounded text-xs font-bold">Missing: ${tokenValidation?.missing?.join(', ')}</span>`
+              authGroup +=
+                this.renderInputRow(
+                  'Status',
+                  'Current token validation status.',
+                  status,
+                ) +
+                this.renderInputRow(
+                  'Personal Access Token',
+                  'Codex personal access token.',
+                  `<input type="password" value="${esc(data?.personalAccessToken || '')}" class="${rawInputCls} pr-8" data-p="${esc(pn)}" data-t="codex" data-f="personalAccessToken" onchange="App.uf(this)" autocomplete="off"><button class="absolute right-2 p-1 text-textMuted hover:text-textMain transition-colors" onclick="togglePw(this)"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg></button>`,
+                  true,
+                )
             } else {
               const status = authValidation?.ok
                 ? '<span class="px-2 py-1 bg-brandLight text-brand rounded text-xs font-bold">Valid Session</span>'
@@ -2980,6 +3058,15 @@
             }
 
             let providerGroup = ''
+            const modelSettings = this.renderFormGroup(
+              'Model Settings',
+              this.renderInputRow(
+                'Model',
+                isChat ? 'Requested model via web.' : 'Requested API model.',
+                `<input type="text" value="${esc(data?.model || '')}" placeholder="gpt-4" class="${rawInputCls}" data-p="${esc(pn)}" data-t="codex" data-f="model" onchange="App.uf(this)">`,
+                true,
+              ),
+            )
             if (isChat) {
               const authJson = data?.authJson || ''
               const fields = [
@@ -3006,16 +3093,9 @@
                 })
                 .join('')
               providerGroup =
-                this.renderFormGroup('Session Tokens', chatTokens) +
-                this.renderFormGroup(
-                  'Model Settings',
-                  this.renderInputRow(
-                    'Model',
-                    'Requested model via web.',
-                    `<input type="text" value="${esc(data?.model || '')}" placeholder="gpt-4" class="${rawInputCls}" data-p="${esc(pn)}" data-t="codex" data-f="model" onchange="App.uf(this)">`,
-                    true,
-                  ),
-                )
+                this.renderFormGroup('Session Tokens', chatTokens) + modelSettings
+            } else if (isToken) {
+              providerGroup = modelSettings
             } else {
               const p =
                 this.renderInputRow(
@@ -3433,7 +3513,9 @@
                   profile.authJson = a.authJson
                   profile.authMode = a.authMode
                   profile.apiKey = a.apiKey || profile.apiKey || ''
-                  if (a.authMode === 'chatgpt') {
+                  profile.personalAccessToken =
+                    a.personalAccessToken || profile.personalAccessToken || ''
+                  if (a.authMode !== 'api') {
                     profile.modelProvider = ''
                     profile.providerName = ''
                     profile.baseUrl = ''
@@ -3594,14 +3676,22 @@
           const tool = Store.getSelectedTool()
           const profile = Store.getProfile(tool, name)
           if (!profile || !this.canManageTool(tool)) return
-          if (
-            tool === 'codex' &&
-            normalizeCodexAuthMode(profile.authMode) === 'chatgpt'
-          ) {
-            const validation = validateCodexChatGptAuth(profile.authJson)
-            if (!validation.ok) {
-              toast(`Missing tokens: ${validation.missing.join(', ')}`, 'error')
-              return
+          if (tool === 'codex') {
+            const authMode = normalizeCodexAuthMode(profile.authMode)
+            if (authMode === 'chatgpt') {
+              const validation = validateCodexChatGptAuth(profile.authJson)
+              if (!validation.ok) {
+                toast(`Missing tokens: ${validation.missing.join(', ')}`, 'error')
+                return
+              }
+            } else if (authMode === 'token') {
+              const validation = validateCodexPersonalAccessToken(
+                profile.personalAccessToken,
+              )
+              if (!validation.ok) {
+                toast(`Missing: ${validation.missing.join(', ')}`, 'error')
+                return
+              }
             }
           }
 
@@ -3650,11 +3740,16 @@
               }
             }
           } else if (tool === 'codex') {
-            const isChat =
-              normalizeCodexAuthMode(profile.authMode) === 'chatgpt'
+            const authMode = normalizeCodexAuthMode(profile.authMode)
+            const modeLabel =
+              authMode === 'chatgpt'
+                ? 'ChatGPT'
+                : authMode === 'token'
+                  ? 'Token'
+                  : 'API'
             add(
               'log-sys',
-              `[TASK] Writing Codex configs (${isChat ? 'ChatGPT' : 'API'})...`,
+              `[TASK] Writing Codex configs (${modeLabel})...`,
             )
             if (FS.isLinked('codexAuth')) {
               try {
