@@ -2177,6 +2177,11 @@
             tb.push(
               `wire_api = ${JSON.stringify(String(p.wireApi || 'responses'))}`,
             )
+            tb.push('requires_openai_auth = true')
+            if (p.apiKey)
+              tb.push(
+                `experimental_bearer_token = ${JSON.stringify(String(p.apiKey))}`,
+              )
             tb.push(me)
           }
           const addTable = (name, lines) => {
